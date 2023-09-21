@@ -56,7 +56,7 @@ def run():
                 play = None
 
             # print(play)
-            # print(stats.MapInfo)
+            print(stats.MapInfo)
             if play is not None and play != "":
 
                 pp = f'{"{:.2f}".format(stats.stat_pp)}PP ({"{:.2f}".format(stats.stat_fc_pp)}PP if fc)'

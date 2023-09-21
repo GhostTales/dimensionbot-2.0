@@ -112,25 +112,37 @@ class osu_stats:
 
         # ___________ calc pp ___________ #
 
-        self.map_ar = self.api.beatmap_attributes(self.map_id, mods=self.stat_mods).attributes.approach_rate
-        self.map_od = self.api.beatmap_attributes(self.map_id, mods=self.stat_mods).attributes.overall_difficulty
-        self.map_hp = self.beatmap.drain
-        self.map_cs = self.beatmap.cs
+
+        self.map_ar = self.MapInfo.ar
+        self.map_od = self.MapInfo.od
+        self.map_hp = self.MapInfo.hp
+        self.map_cs = self.MapInfo.cs
         self.map_bpm = self.beatmap.bpm
 
+        import math
+
         if 'HR' in str(self.stat_mods):
-            self.map_hp = min(int(self.beatmap.drain) * 1.4, 10)
-            self.map_cs = min(int(self.beatmap.cs) * 1.4, 10)
+            self.map_ar = min(int(self.MapInfo.ar) * 1.4, 10)
+            self.map_hp = min(int(self.MapInfo.hp) * 1.4, 10)
+            self.map_cs = min(int(self.MapInfo.cs) * 1.4, 10)
+            self.map_od = min(int(self.MapInfo.od) * 1.4, 10)
 
         if 'EZ' in str(self.stat_mods):
-            self.map_hp = int(self.beatmap.drain) * 0.5
-            self.map_cs = int(self.beatmap.cs) * 0.5
+            self.map_hp = int(self.MapInfo.hp) * 0.5
+            self.map_cs = int(self.MapInfo.cs) * 0.5
+            self.map_ar = int(self.MapInfo.ar) * 0.5
+            self.map_od = int(self.MapInfo.od) * 0.5
 
         if 'DT' in str(self.stat_mods):
+
             self.map_bpm = int(self.beatmap.bpm) * 1.5
+            self.map_ar = min(0.126e-1 * int(self.MapInfo.ar) ** 2 + 0.4833e0 * int(self.MapInfo.ar) + 5, 11.11)
+            self.map_od = min(0.6667 * int(self.MapInfo.od) + 4.4427, 11.11)
 
         if 'HT' in str(self.stat_mods):
             self.map_bpm = int(self.beatmap.bpm) * 0.75
+            self.map_ar = min(2.89 + 12.1708 * math.sin(0.1226 * int(self.MapInfo.ar) - 0.6973), 9)
+            self.map_od = min(1.3333 * int(self.MapInfo.od) - 4.4427, 11.11)
 
         self.map_max_combo = self.MapInfo.maxCombo()
 
