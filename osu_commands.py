@@ -5,6 +5,7 @@ import oppadc
 import requests
 import zipfile
 import shutil
+import concurrent.futures
 
 client_id = 24667
 client_secret = "3u3hoHG5DZ54zWWj4XRuf6a1wzXuIap5uBSqXIPT"
@@ -64,8 +65,6 @@ class osu_stats:
         # Create a new folder
         os.mkdir(folder_path)
 
-        import concurrent.futures
-
         response = [
             requests.get(f'https://beatconnect.io/b/{self.mapset_id}'),
             requests.get(f'https://dl.sayobot.cn/beatmaps/download/full/{self.mapset_id}'),
@@ -79,6 +78,9 @@ class osu_stats:
 
         def download_and_extract(index, resp):
             try:
+                if os.path.exists(f'map_files/{self.mapset_artist} - {self.map_title} ({self.mapset_creator}) [{self.map_diff.rstrip("?")}].osu'):
+                    return None
+
                 with open(f'{mapset_download}_{index}.osz', 'wb') as file:
                     file.write(resp.content)
                 with zipfile.ZipFile(f'{mapset_download}_{index}.osz', 'r') as zip_ref:
@@ -109,7 +111,6 @@ class osu_stats:
         self.stat_fc_pp = self.MapInfo.getPP(str(self.stat_mods), recalculate=True, **{'n300': int(max_n300),
                                                                                         'n100': int(self.stat_n100),
                                                                                         'n50': int(self.stat_n50)}).total_pp
-
         # ___________ calc pp ___________ #
 
 
@@ -122,27 +123,27 @@ class osu_stats:
         import math
 
         if 'HR' in str(self.stat_mods):
-            self.map_ar = min(int(self.MapInfo.ar) * 1.4, 10)
-            self.map_hp = min(int(self.MapInfo.hp) * 1.4, 10)
-            self.map_cs = min(int(self.MapInfo.cs) * 1.4, 10)
-            self.map_od = min(int(self.MapInfo.od) * 1.4, 10)
+            self.map_ar = min(int(self.map_ar) * 1.4, 10)
+            self.map_hp = min(int(self.map_hp) * 1.4, 10)
+            self.map_cs = min(int(self.map_cs) * 1.3, 10)
+            self.map_od = min(int(self.map_od) * 1.4, 10)
 
         if 'EZ' in str(self.stat_mods):
-            self.map_hp = int(self.MapInfo.hp) * 0.5
-            self.map_cs = int(self.MapInfo.cs) * 0.5
-            self.map_ar = int(self.MapInfo.ar) * 0.5
-            self.map_od = int(self.MapInfo.od) * 0.5
+            self.map_hp = int(self.map_hp) * 0.5
+            self.map_cs = int(self.map_cs) * 0.5
+            self.map_ar = int(self.map_ar) * 0.5
+            self.map_od = int(self.map_od) * 0.5
 
         if 'DT' in str(self.stat_mods):
 
             self.map_bpm = int(self.beatmap.bpm) * 1.5
-            self.map_ar = min(0.126e-1 * int(self.MapInfo.ar) ** 2 + 0.4833e0 * int(self.MapInfo.ar) + 5, 11.11)
-            self.map_od = min(0.6667 * int(self.MapInfo.od) + 4.4427, 11.11)
+            self.map_ar = min(0.126e-1 * int(self.map_ar) ** 2 + 0.4833e0 * int(self.map_ar) + 5, 11.11)
+            self.map_od = min(0.6667 * int(self.map_od) + 4.4427, 11.11)
 
         if 'HT' in str(self.stat_mods):
             self.map_bpm = int(self.beatmap.bpm) * 0.75
-            self.map_ar = min(2.89 + 12.1708 * math.sin(0.1226 * int(self.MapInfo.ar) - 0.6973), 9)
-            self.map_od = min(1.3333 * int(self.MapInfo.od) - 4.4427, 11.11)
+            self.map_ar = min(2.89 + 12.1708 * math.sin(0.1226 * int(self.map_ar) - 0.6973), 9)
+            self.map_od = min(1.3333 * int(self.map_od) - 4.4427, 11.11)
 
         self.map_max_combo = self.MapInfo.maxCombo()
 
@@ -186,6 +187,7 @@ class osu_stats:
             if mod in str(self.stat_mods):
                 self.mod_int_value += mod_values[mod]
 
+
         # Round the number to the nearest multiple of 5
         rounded_number = round(float(self.stat_map_progress) / 5) * 5
 
@@ -214,10 +216,9 @@ class osu_stats:
             "<:progress_100:1154520224708706376>"
         ]
 
-        # Ensure the rounded number is within the emotes list index range
-        index = min(max(rounded_number // 5, 0), len(emotes) - 1)
+        # Ensure the index is within the valid range
 
-        self.chart_map_progress = emotes[index]
+        self.chart_map_progress = emotes[rounded_number // 5]
 
 class linking:
     def __init__(self, string):

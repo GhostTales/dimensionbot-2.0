@@ -67,7 +67,8 @@ def run():
                     acc = f'{"{:.2f}".format(stats.stat_acc)}% '
 
                 hit = f'[{stats.stat_n300}/{stats.stat_n100}/{stats.stat_n50}/{stats.stat_n_miss}]'
-                map_stats = f'BPM: {stats.map_bpm} AR: {stats.map_ar} OD: {stats.map_od} CS: {stats.map_cs} HP: {stats.map_hp}'
+                map_stats = (f'**BPM:** {stats.map_bpm} ▸ **AR:** {"{:.1f}".format(stats.map_ar)} ▸ **OD:** {"{:.1f}".format(stats.map_od)}'
+                             f' ▸ **HP:** {"{:.1f}".format(stats.map_hp)} ▸ **CS:** {"{:.1f}".format(stats.map_cs)}')
 
                 if float(stats.stat_map_progress) != 100.0:
                     progress = f'▸ ({"{:.1f}".format(stats.stat_map_progress)}% {stats.chart_map_progress})'
