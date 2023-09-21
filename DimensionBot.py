@@ -59,18 +59,18 @@ def run():
             # print(stats.MapInfo)
             if play is not None and play != "":
 
-                pp = f'{stats.stat_pp}PP ({stats.stat_fc_pp}PP if fc)'
-                acc = f'{stats.stat_acc}% ({stats.stat_fc_acc}% if fc)\n'
+                pp = f'{"{:.2f}".format(stats.stat_pp)}PP ({"{:.2f}".format(stats.stat_fc_pp)}PP if fc)'
+                acc = f'{"{:.2f}".format(stats.stat_acc)}% ({"{:.2f}".format(stats.stat_fc_acc)}% if fc)\n'
 
                 if stats.stat_fc_acc == stats.stat_acc:
-                    pp = f'{stats.stat_pp}PP'
-                    acc = f'{stats.stat_acc}% '
+                    pp = f'{"{:.2f}".format(stats.stat_pp)}PP'
+                    acc = f'{"{:.2f}".format(stats.stat_acc)}% '
 
                 hit = f'[{stats.stat_n300}/{stats.stat_n100}/{stats.stat_n50}/{stats.stat_n_miss}]'
                 map_stats = f'BPM: {stats.map_bpm} AR: {stats.map_ar} OD: {stats.map_od} CS: {stats.map_cs} HP: {stats.map_hp}'
 
                 if float(stats.stat_map_progress) != 100.0:
-                    progress = f'▸ ({stats.stat_map_progress}%)'
+                    progress = f'▸ ({"{:.1f}".format(stats.stat_map_progress)}%)'
                 else: progress = ''
 
 
@@ -107,7 +107,7 @@ def run():
                 recent.timestamp = stats.map_date_created
 
                 rank_status = discord.File(f'ranking_status/{stats.map_rank_status}.png', filename=f'{stats.map_rank_status}.png')
-                recent.set_author(name=f'{stats.map_title} [{stats.map_diff}] +{stats.stat_mods} [{stats.stat_stars}★]',
+                recent.set_author(name=f'{stats.map_title} [{stats.map_diff}] +{stats.stat_mods} [{"{:.2f}".format(stats.stat_stars)}★]',
                                   url=f'https://osu.ppy.sh/beatmapsets/{stats.mapset_id}#osu/{stats.map_id}',
                                   icon_url=f'attachment://{stats.map_rank_status}.png')
 

@@ -35,24 +35,24 @@ class osu_stats:
         self.player_avatar = self.play[0]._user.avatar_url
 
         # play stats
-        self.stat_acc = "{:.2f}".format(round(100 * self.play[0].accuracy, 2))
+        self.stat_acc = 100 * self.play[0].accuracy
         self.stat_n300 = self.play[0].statistics.count_300
         self.stat_n100 = self.play[0].statistics.count_100
         self.stat_n50 = self.play[0].statistics.count_50
         self.stat_n_miss = self.play[0].statistics.count_miss
         self.stat_mods = self.play[0].mods
         self.stat_score = f'{self.play[0].score:,}'
-        self.stat_stars = round(self.api.beatmap_attributes(self.map_id, mods=self.stat_mods).attributes.star_rating, 2)
+        self.stat_stars = self.api.beatmap_attributes(self.map_id, mods=self.stat_mods).attributes.star_rating
         self.stat_rank_grade = self.play[0].rank
         self.stat_achieved_combo = self.play[0].max_combo
-        self.stat_map_progress = "{:.1f}".format(100 * (self.stat_n300 + self.stat_n100 + self.stat_n50 + self.stat_n_miss) / self.map_obj_count)
+        self.stat_map_progress = 100 * (self.stat_n300 + self.stat_n100 + self.stat_n50 + self.stat_n_miss) / self.map_obj_count
 
         # ___________ calc fc_acc ___________ #
 
         max_n300 = self.map_obj_count - self.stat_n100 - self.stat_n50
         top = 300 * max_n300 + 100 * self.stat_n100 + 50 * self.stat_n50
         divider = 300 * (max_n300 + self.stat_n100 + self.stat_n50)
-        self.stat_fc_acc = "{:.2f}".format(round(100 * (top / divider), 2))
+        self.stat_fc_acc = 100 * (top / divider)
         # ___________ calc fc_acc ___________ #
 
         # ___________ calc pp ___________ #
@@ -64,37 +64,56 @@ class osu_stats:
         # Create a new folder
         os.mkdir(folder_path)
 
-        response = requests.get(f'https://beatconnect.io/b/{self.mapset_id}')
+        import concurrent.futures
 
-        mapset_download = f'map_files/{self.mapset_id} {self.mapset_artist} - {self.map_title}.osz'
+        response = [
+            requests.get(f'https://beatconnect.io/b/{self.mapset_id}'),
+            requests.get(f'https://dl.sayobot.cn/beatmaps/download/full/{self.mapset_id}'),
+            requests.get(f'https://dl.sayobot.cn/beatmaps/download/novideo/{self.mapset_id}'),
+            requests.get(f'https://api.nerinyan.moe/d/{self.mapset_id}'),
+            requests.get(f'https://api.nerinyan.moe/d/{self.mapset_id}?nv=1'),
+            requests.get(f'https://api.chimu.moe/v1/download/{self.mapset_id}?n=1')
+        ]
 
-        with open(mapset_download, 'wb') as file:
-            file.write(response.content)
+        mapset_download = f'map_files/{self.mapset_id} {self.mapset_artist} - {self.map_title}'
 
-        with zipfile.ZipFile(mapset_download, 'r') as zip_ref:
-            osu_files = zip_ref.namelist()
-            for file in osu_files:
-                if file.endswith(f'[{self.map_diff.rstrip("?")}].osu'):
-                    zip_ref.extract(file, 'map_files')
-                    map_extract = file
-                    break
+        def download_and_extract(index, resp):
+            try:
+                with open(f'{mapset_download}_{index}.osz', 'wb') as file:
+                    file.write(resp.content)
+                with zipfile.ZipFile(f'{mapset_download}_{index}.osz', 'r') as zip_ref:
+                    osu_files = zip_ref.namelist()
+                    for file in osu_files:
+                        if self.map_diff is not None and file.endswith(f'[{self.map_diff.rstrip("?")}].osu'):
+                            zip_ref.extract(file, 'map_files')
+                            return file
+            except Exception:
+                return None
 
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            results = [executor.submit(download_and_extract, index, resp) for index, resp in enumerate(response)]
+
+        map_extract = ''
+        for result in results:
+            if result.result() is not None:
+                map_extract = result.result()
+                break
 
         self.MapInfo = oppadc.OsuMap(file_path=f'map_files/{map_extract}')
 
-        self.stat_pp = round(self.MapInfo.getPP(str(self.stat_mods), recalculate=True, **{'n300': int(self.stat_n300),
+        self.stat_pp = self.MapInfo.getPP(str(self.stat_mods), recalculate=True, **{'n300': int(self.stat_n300),
                                                                                         'n100': int(self.stat_n100),
                                                                                         'n50': int(self.stat_n50),
-                                                                                        'combo': int(self.stat_achieved_combo)}).total_pp, 2)
+                                                                                        'combo': int(self.stat_achieved_combo)}).total_pp
 
-        self.stat_fc_pp = round(self.MapInfo.getPP(str(self.stat_mods), recalculate=True, **{'n300': int(max_n300),
+        self.stat_fc_pp = self.MapInfo.getPP(str(self.stat_mods), recalculate=True, **{'n300': int(max_n300),
                                                                                         'n100': int(self.stat_n100),
-                                                                                        'n50': int(self.stat_n50)}).total_pp, 2)
+                                                                                        'n50': int(self.stat_n50)}).total_pp
 
         # ___________ calc pp ___________ #
 
-        self.map_ar = round(self.api.beatmap_attributes(self.map_id, mods=self.stat_mods).attributes.approach_rate, 2)
-        self.map_od = round(self.api.beatmap_attributes(self.map_id, mods=self.stat_mods).attributes.overall_difficulty,2)
+        self.map_ar = self.api.beatmap_attributes(self.map_id, mods=self.stat_mods).attributes.approach_rate
+        self.map_od = self.api.beatmap_attributes(self.map_id, mods=self.stat_mods).attributes.overall_difficulty
         self.map_hp = self.beatmap.drain
         self.map_cs = self.beatmap.cs
         self.map_bpm = self.beatmap.bpm
