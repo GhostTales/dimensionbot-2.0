@@ -84,10 +84,12 @@ def run():
                 # download map card
                 urllib.request.urlretrieve(stats.map_image, base_image_pos)
 
+                ranking_grade_set = "website"
+
                 # open all images for editing
                 base_image = Image.open(base_image_pos)
                 middle_image = Image.open('map_image_card/rectangle.png')
-                top_image = Image.open(f'rank_grades/{stats.stat_rank_grade}.png')
+                top_image = Image.open(f'rank_grades/{ranking_grade_set}/{stats.stat_rank_grade}.png')
 
                 # edit all the images together
                 base_image.paste(middle_image.resize((100, 100)), (-30, -65), middle_image.resize((100, 100)))

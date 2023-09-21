@@ -66,7 +66,7 @@ class osu_stats:
 
         response = requests.get(f'https://beatconnect.io/b/{self.mapset_id}')
 
-        mapset_download = f'map_files/{self.mapset_id} {self.mapset_artist} - {self.map_title}.zip'
+        mapset_download = f'map_files/{self.mapset_id} {self.mapset_artist} - {self.map_title}.osz'
 
         with open(mapset_download, 'wb') as file:
             file.write(response.content)
