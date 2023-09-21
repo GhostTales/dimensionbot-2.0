@@ -118,19 +118,37 @@ class osu_stats:
         self.mod_int_value = 0
 
         mod_values = {
-            'NF': 1,
-            'EZ': 2,
-            'TD': 4,
-            'HD': 8,
-            'HR': 16,
-            'SD': 32,
-            'DT': 64,
-            'RX': 128,
-            'HT': 256,
-            'NC': 576,
-            'FL': 1024,
-            'SO': 4096,
-            'PF': 16416
+            'NF': pow(2, 0),
+            'EZ': pow(2, 1),
+            'TD': pow(2, 2),
+            'HD': pow(2, 3),
+            'HR': pow(2, 4),
+            'SD': pow(2, 5),
+            'DT': pow(2, 6),
+            'RX': pow(2, 7),
+            'HT': pow(2, 8),
+            'NC': pow(2, 9) + pow(2, 6), # Only set along with DoubleTime. i.e: NC only gives 576
+            'FL': pow(2, 10),
+            'AT': pow(2, 11),
+            'SO': pow(2, 12),
+            'AP': pow(2, 13),
+            'PF': pow(2, 14) + pow(2, 5), # Only set along with SuddenDeath. i.e: PF only gives 16416
+            'K4': pow(2, 15),
+            'K5': pow(2, 16),
+            'K6': pow(2, 17),
+            'K7': pow(2, 18),
+            'K8': pow(2, 19),
+            'FI': pow(2, 20),
+            'RD': pow(2, 21),
+            'CN': pow(2, 22),
+            'TP': pow(2, 23),
+            'K9': pow(2, 24),
+            'CO': pow(2, 25),
+            'K1': pow(2, 26),
+            'K3': pow(2, 27),
+            'K2': pow(2, 28),
+            'V2': pow(2, 29),
+            'MR': pow(2, 30),
         }
 
         for mod in mod_values:
