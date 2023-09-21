@@ -70,7 +70,7 @@ def run():
                 map_stats = f'BPM: {stats.map_bpm} AR: {stats.map_ar} OD: {stats.map_od} CS: {stats.map_cs} HP: {stats.map_hp}'
 
                 if float(stats.stat_map_progress) != 100.0:
-                    progress = f'▸ ({"{:.1f}".format(stats.stat_map_progress)}%)'
+                    progress = f'▸ ({"{:.1f}".format(stats.stat_map_progress)}% {stats.chart_map_progress})'
                 else: progress = ''
 
 

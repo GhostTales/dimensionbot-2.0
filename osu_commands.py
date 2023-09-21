@@ -186,6 +186,38 @@ class osu_stats:
             if mod in str(self.stat_mods):
                 self.mod_int_value += mod_values[mod]
 
+        # Round the number to the nearest multiple of 5
+        rounded_number = round(float(self.stat_map_progress) / 5) * 5
+
+        # Define the list of emotes
+        emotes = [
+            "<:progress_0:1154520040884944996>",
+            "<:progress_5:1154520042206142596>",
+            "<:progress_10:1154520045519642714>",
+            "<:progress_15:1154520047784566784>",
+            "<:progress_20:1154520048971567157>",
+            "<:progress_25:1154520051567833179>",
+            "<:progress_30:1154520053274914866>",
+            "<:progress_35:1154520054499659826>",
+            "<:progress_40:1154520056546476042>",
+            "<:progress_45:1154520057725079652>",
+            "<:progress_50:1154520058983358584>",
+            "<:progress_55:1154520771406860389>",
+            "<:progress_60:1154520772631605328>",
+            "<:progress_65:1154520775055900822>",
+            "<:progress_70:1154520776502943774>",
+            "<:progress_75:1154520778893701213>",
+            "<:progress_80:1154520780273614968>",
+            "<:progress_85:1154520097931677846>",
+            "<:progress_90:1154520122157973575>",
+            "<:progress_95:1154520172988727347>",
+            "<:progress_100:1154520224708706376>"
+        ]
+
+        # Ensure the rounded number is within the emotes list index range
+        index = min(max(rounded_number // 5, 0), len(emotes) - 1)
+
+        self.chart_map_progress = emotes[index]
 
 class linking:
     def __init__(self, string):
