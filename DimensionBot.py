@@ -4,6 +4,7 @@ import json
 import os
 import random
 import shutil
+import threading
 import time
 import urllib.request
 from PIL import Image
@@ -118,6 +119,8 @@ def run():
         else:
             await ctx.send(embed=discord.Embed(description=f'{ctx.author.mention} is not linked to an osu account',
                                                colour=discord.Colour.red()))
+
+    threading.Thread(target=rs).start()
 
     @bot.command()
     async def roll(ctx, number=100):
