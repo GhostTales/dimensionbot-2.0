@@ -175,11 +175,11 @@ def run():
             hours, remainder = divmod(time_spent, 3600)
             minutes, seconds = divmod(remainder, 60)
             # Use a non-pinging format for user mentions
-            description += f"**{i}.**  <@!{user_id}> - {hours}h {minutes}m {seconds}s\n"
+            description += f"**{i}.**  <@!{user_id}> - {hours}h {minutes}m\n"
         age = int(time.time()) - 1679505465
         hours2, remainder2 = divmod(age, 3600)
         minutes2, seconds2 = divmod(remainder2, 60)
-        description += f"**Age of leaderboard:** {hours2}h {minutes2}m {seconds2}s"
+        description += f"**Age of leaderboard:** {hours2}h {minutes2}m"
         embed = discord.Embed(title=title, description=description, colour=discord.Colour.orange())
         await ctx.send(embed=embed)
 
@@ -357,7 +357,7 @@ def run():
             with open('osu_links.json', 'w') as file:
                 file.write('{}')
 
-    @tasks.loop(seconds=1)
+    @tasks.loop(minutes=1)
     async def update_vc_time():
         for guild in bot.guilds:
             for vc in guild.voice_channels:
