@@ -68,9 +68,7 @@ class osu_stats:
 
         response = [
             requests.get(f'https://beatconnect.io/b/{self.mapset_id}'),
-            requests.get(f'https://dl.sayobot.cn/beatmaps/download/full/{self.mapset_id}'),
             requests.get(f'https://dl.sayobot.cn/beatmaps/download/novideo/{self.mapset_id}'),
-            requests.get(f'https://api.nerinyan.moe/d/{self.mapset_id}'),
             requests.get(f'https://api.nerinyan.moe/d/{self.mapset_id}?nv=1'),
             requests.get(f'https://api.chimu.moe/v1/download/{self.mapset_id}?n=1')
         ]
