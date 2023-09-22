@@ -79,12 +79,12 @@ class osu_stats:
             requests.get(f'https://api.nerinyan.moe/d/{self.mapset_id}?nv=1'),
             requests.get(f'https://api.chimu.moe/v1/download/{self.mapset_id}?n=1')
         ]
-
-        mapset_download = f'map_files/{self.mapset_id} {self.mapset_artist} - {self.map_title}'
+        map_files = 'C:/Users/Server/Desktop/dimensionbot-2.0/map_files'
+        mapset_download = f'{map_files}/{self.mapset_id} {self.mapset_artist} - {self.map_title}'
 
         def download_and_extract(index, resp):
             try:
-                if os.path.exists(f'map_files/{self.mapset_artist} - {self.map_title} ({self.mapset_creator}) [{self.map_diff.rstrip("?")}].osu'):
+                if os.path.exists(f'{map_files}/{self.mapset_artist} - {self.map_title} ({self.mapset_creator}) [{self.map_diff.rstrip("?")}].osu'):
                     return None
 
                 with open(f'{mapset_download}_{index}.osz', 'wb') as file:
@@ -93,7 +93,7 @@ class osu_stats:
                     osu_files = zip_ref.namelist()
                     for file in osu_files:
                         if self.map_diff is not None and file.endswith(f'[{self.map_diff.rstrip("?")}].osu'):
-                            zip_ref.extract(file, 'map_files')
+                            zip_ref.extract(file, map_files)
                             return file
             except Exception:
                 return None
@@ -107,7 +107,7 @@ class osu_stats:
                 map_extract = result.result()
                 break
 
-        self.MapInfo = oppadc.OsuMap(file_path=f'map_files/{map_extract}')
+        self.MapInfo = oppadc.OsuMap(file_path=f'{map_files}/{map_extract}')
         self.map_max_combo = self.MapInfo.maxCombo()
 
 
