@@ -6,6 +6,7 @@ import requests
 import zipfile
 import shutil
 import concurrent.futures
+from rosu_pp_py import Beatmap, Calculator
 
 client_id = 24667
 client_secret = "3u3hoHG5DZ54zWWj4XRuf6a1wzXuIap5uBSqXIPT"
@@ -50,9 +51,9 @@ class osu_stats:
 
         # ___________ calc fc_acc ___________ #
 
-        max_n300 = self.map_obj_count - self.stat_n100 - self.stat_n50
-        top = 300 * max_n300 + 100 * self.stat_n100 + 50 * self.stat_n50
-        divider = 300 * (max_n300 + self.stat_n100 + self.stat_n50)
+        self.max_n300 = self.map_obj_count - self.stat_n100 - self.stat_n50
+        top = 300 * self.max_n300 + 100 * self.stat_n100 + 50 * self.stat_n50
+        divider = 300 * (self.max_n300 + self.stat_n100 + self.stat_n50)
         self.stat_fc_acc = 100 * (top / divider)
         # ___________ calc fc_acc ___________ #
 
@@ -102,17 +103,73 @@ class osu_stats:
                 break
 
         self.MapInfo = oppadc.OsuMap(file_path=f'map_files/{map_extract}')
+        self.map_max_combo = self.MapInfo.maxCombo()
 
-        self.stat_pp = self.MapInfo.getPP(str(self.stat_mods), recalculate=True, **{'n300': int(self.stat_n300),
-                                                                                        'n100': int(self.stat_n100),
-                                                                                        'n50': int(self.stat_n50),
-                                                                                        'combo': int(self.stat_achieved_combo)}).total_pp
 
-        self.stat_fc_pp = self.MapInfo.getPP(str(self.stat_mods), recalculate=True, **{'n300': int(max_n300),
-                                                                                        'n100': int(self.stat_n100),
-                                                                                        'n50': int(self.stat_n50)}).total_pp
+        self.mod_int_value = 0
+
+        mod_values = {
+            'NF': pow(2, 0),
+            'EZ': pow(2, 1),
+            'TD': pow(2, 2),
+            'HD': pow(2, 3),
+            'HR': pow(2, 4),
+            'SD': pow(2, 5),
+            'DT': pow(2, 6),
+            'RX': pow(2, 7),
+            'HT': pow(2, 8),
+            'NC': pow(2, 9) + pow(2, 6),  # Only set along with DoubleTime. i.e: NC only gives 576
+            'FL': pow(2, 10),
+            'AT': pow(2, 11),
+            'SO': pow(2, 12),
+            'AP': pow(2, 13),
+            'PF': pow(2, 14) + pow(2, 5),  # Only set along with SuddenDeath. i.e: PF only gives 16416
+            'K4': pow(2, 15),
+            'K5': pow(2, 16),
+            'K6': pow(2, 17),
+            'K7': pow(2, 18),
+            'K8': pow(2, 19),
+            'FI': pow(2, 20),
+            'RD': pow(2, 21),
+            'CN': pow(2, 22),
+            'TP': pow(2, 23),
+            'K9': pow(2, 24),
+            'CO': pow(2, 25),
+            'K1': pow(2, 26),
+            'K3': pow(2, 27),
+            'K2': pow(2, 28),
+            'V2': pow(2, 29),
+            'MR': pow(2, 30),
+        }
+
+        for mod in mod_values:
+            if mod in str(self.stat_mods):
+                self.mod_int_value += mod_values[mod]
+
+        map = Beatmap(path=f'map_files/{map_extract}')
+        calc_pp = Calculator(mods=self.mod_int_value)
+
+        calc_pp.set_acc(self.stat_acc)
+        calc_pp.set_n50(self.stat_n50)
+        calc_pp.set_n100(self.stat_n100)
+        calc_pp.set_n300(self.stat_n300)
+        calc_pp.set_n_misses(self.stat_n_miss)
+        calc_pp.set_combo(self.stat_achieved_combo)
+
+        self.stat_pp = calc_pp.performance(map).pp
+
+        calc_fc_pp = Calculator(mods=self.mod_int_value)
+
+        calc_fc_pp.set_acc(self.stat_fc_acc)
+        calc_fc_pp.set_n50(self.stat_n50)
+        calc_fc_pp.set_n100(self.stat_n100)
+        calc_fc_pp.set_n300(self.max_n300)
+        calc_fc_pp.set_n_misses(0)
+        calc_fc_pp.set_combo(self.map_max_combo)
+
+        self.stat_fc_pp = calc_fc_pp.performance(map).pp
+
         # ___________ calc pp ___________ #
-
 
         self.map_ar = self.MapInfo.ar
         self.map_od = self.MapInfo.od
@@ -145,47 +202,7 @@ class osu_stats:
             self.map_ar = min(2.89 + 12.1708 * math.sin(0.1226 * int(self.map_ar) - 0.6973), 9)
             self.map_od = min(1.3333 * int(self.map_od) - 4.4427, 11.11)
 
-        self.map_max_combo = self.MapInfo.maxCombo()
 
-        self.mod_int_value = 0
-
-        mod_values = {
-            'NF': pow(2, 0),
-            'EZ': pow(2, 1),
-            'TD': pow(2, 2),
-            'HD': pow(2, 3),
-            'HR': pow(2, 4),
-            'SD': pow(2, 5),
-            'DT': pow(2, 6),
-            'RX': pow(2, 7),
-            'HT': pow(2, 8),
-            'NC': pow(2, 9) + pow(2, 6), # Only set along with DoubleTime. i.e: NC only gives 576
-            'FL': pow(2, 10),
-            'AT': pow(2, 11),
-            'SO': pow(2, 12),
-            'AP': pow(2, 13),
-            'PF': pow(2, 14) + pow(2, 5), # Only set along with SuddenDeath. i.e: PF only gives 16416
-            'K4': pow(2, 15),
-            'K5': pow(2, 16),
-            'K6': pow(2, 17),
-            'K7': pow(2, 18),
-            'K8': pow(2, 19),
-            'FI': pow(2, 20),
-            'RD': pow(2, 21),
-            'CN': pow(2, 22),
-            'TP': pow(2, 23),
-            'K9': pow(2, 24),
-            'CO': pow(2, 25),
-            'K1': pow(2, 26),
-            'K3': pow(2, 27),
-            'K2': pow(2, 28),
-            'V2': pow(2, 29),
-            'MR': pow(2, 30),
-        }
-
-        for mod in mod_values:
-            if mod in str(self.stat_mods):
-                self.mod_int_value += mod_values[mod]
 
 
         # Round the number to the nearest multiple of 5
