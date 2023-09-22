@@ -379,9 +379,6 @@ def run():
                             await channel.send(
                                 f"Congratulations! <@!{user_id}> has spent {hours} hours in a voice channel!")
 
-        # Debug: Print the vc_time dictionary before saving
-        print("vc_time before saving:", vc_time)
-
         # Save vc_time to a file
         with open("vc_time.json", "w") as file:
             json.dump(vc_time, file)
