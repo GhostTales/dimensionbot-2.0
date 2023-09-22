@@ -10,6 +10,8 @@ from PIL import Image
 import discord
 from discord.ext import tasks, commands
 import re
+
+from help_list import commands_info
 from osu_commands import osu_stats, linking
 
 def run():
@@ -213,35 +215,26 @@ def run():
             embed = discord.Embed(description="Please input valid ratio value", colour=discord.Colour.orange())
             await ctx.send(embed=embed)
 
+
     @bot.command()
     async def help(ctx, command=None):
-        valid_commands = ["roll", "top", "area"]
-        if command not in valid_commands:
-            command = None
         embed = discord.Embed(title='Help list', colour=discord.Colour.orange())
+
         if command is None:
-            embed.add_field(name="!help",
-                            value="Displays a message with information about the bot's commands and functionality, including greetings and pet emotes that trigger specific responses.",
-                            inline=False)
-        if command is None or command == "roll":
-            embed.add_field(name="!roll",
-                            value="Rolls a random number between 1 and the specified number (default is 100) and displays the result in an embedded message.",
-                            inline=False)
-        if command is None or command == "top":
-            embed.add_field(name="!top",
-                            value="Displays the top 5 users who have spent the most time in a voice call, along with their total time spent and the age of the leaderboard.",
-                            inline=False)
-        if command is None or command == "area":
-            embed.add_field(name="!area",
-                            value="Calculates the perfect osu tablet area from the given with from the minimum width, maximum width and ratio values\nExample !area 80 120 1.4",
-                            inline=False)
-        if command is None:
-            embed.add_field(name="Bot greetings",
-                            value='**hello**: The bot responds with "Hello! <:scymenHey:1071540827928662037>".\n**hi** or **hai**: The bot responds with "Wassup! <:virgin:1064263792386637986>".\n**hey** or **heya**: The bot responds with "Hey there! <a:petthepainaway:1062736826617561108>".',
-                            inline=False)
-            embed.add_field(name="Emotes",
-                            value="petthepainaway: <a:petthepainaway:1062736826617561108>\npetkizu: <a:petkizu:1069555999633059840>\nnedpet: <a:nedpet:1069621576930164858>\npetelle: <a:petelle:1069558979216281682>\nkaypet: <a:kaypet:880356602803261462>\npetrainy: <a:petrainy:1062735394132742205>",
-                            inline=False)
+            for cmd_info in commands_info:
+                embed.add_field(name=cmd_info["name"], value=cmd_info["description"], inline=False)
+        elif command.lower() == "commands":
+            # Display a list of all available commands
+            for cmd_info in commands_info:
+                embed.add_field(name=cmd_info["name"], value="", inline=False)
+        else:
+            cmd_info = next((info for info in commands_info if info["name"].replace('!','').lower() == command), None)
+            if cmd_info:
+                embed.add_field(name=cmd_info["name"], value=cmd_info["description"], inline=False)
+            else:
+                embed.add_field(name="Command not found", value="The specified command is not recognized.",
+                                inline=False)
+
         await ctx.send(embed=embed)
 
     @bot.event
