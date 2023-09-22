@@ -4,6 +4,7 @@ from ossapi import UserLookupKey, Ossapi
 import oppadc
 import requests
 import zipfile
+import shutil
 import concurrent.futures
 from rosu_pp_py import Beatmap, Calculator
 
@@ -59,17 +60,11 @@ class osu_stats:
         # ___________ calc pp ___________ #
 
         folder_path = 'map_files'
-
-        # Remove files with the .osz extension in the folder
-        for filename in os.listdir(folder_path):
-            if filename.endswith(".osz"):
-                file_path = os.path.join(folder_path, filename)
-                with contextlib.suppress(FileNotFoundError):
-                    os.remove(file_path)
-
-        # Optionally, create a new folder if it doesn't exist
-        if not os.path.exists(folder_path):
-            os.mkdir(folder_path)
+        with contextlib.suppress(FileNotFoundError):
+            # Remove the folder and its contents
+            shutil.rmtree(folder_path)
+        # Create a new folder
+        os.mkdir(folder_path)
 
         response = [
             requests.get(f'https://beatconnect.io/b/{self.mapset_id}'),
@@ -79,12 +74,12 @@ class osu_stats:
             requests.get(f'https://api.nerinyan.moe/d/{self.mapset_id}?nv=1'),
             requests.get(f'https://api.chimu.moe/v1/download/{self.mapset_id}?n=1')
         ]
-        map_files = 'C:/Users/Server/Desktop/dimensionbot-2.0/map_files'
-        mapset_download = f'{map_files}/{self.mapset_id} {self.mapset_artist} - {self.map_title}'
+
+        mapset_download = f'map_files/{self.mapset_id} {self.mapset_artist} - {self.map_title}'
 
         def download_and_extract(index, resp):
             try:
-                if os.path.exists(f'{map_files}/{self.mapset_artist} - {self.map_title} ({self.mapset_creator}) [{self.map_diff.rstrip("?")}].osu'):
+                if os.path.exists(f'map_files/{self.mapset_artist} - {self.map_title} ({self.mapset_creator}) [{self.map_diff.rstrip("?")}].osu'):
                     return None
 
                 with open(f'{mapset_download}_{index}.osz', 'wb') as file:
@@ -93,7 +88,7 @@ class osu_stats:
                     osu_files = zip_ref.namelist()
                     for file in osu_files:
                         if self.map_diff is not None and file.endswith(f'[{self.map_diff.rstrip("?")}].osu'):
-                            zip_ref.extract(file, map_files)
+                            zip_ref.extract(file, 'map_files')
                             return file
             except Exception:
                 return None
@@ -107,7 +102,7 @@ class osu_stats:
                 map_extract = result.result()
                 break
 
-        self.MapInfo = oppadc.OsuMap(file_path=f'{map_files}/{map_extract}')
+        self.MapInfo = oppadc.OsuMap(file_path=f'map_files/{map_extract}')
         self.map_max_combo = self.MapInfo.maxCombo()
 
 
