@@ -4,7 +4,6 @@ from ossapi import UserLookupKey, Ossapi
 import oppadc
 import requests
 import zipfile
-import shutil
 import concurrent.futures
 from rosu_pp_py import Beatmap, Calculator
 
@@ -60,11 +59,17 @@ class osu_stats:
         # ___________ calc pp ___________ #
 
         folder_path = 'map_files'
-        with contextlib.suppress(FileNotFoundError):
-            # Remove the folder and its contents
-            shutil.rmtree(folder_path)
-        # Create a new folder
-        os.mkdir(folder_path)
+
+        # Remove files with the .osz extension in the folder
+        for filename in os.listdir(folder_path):
+            if filename.endswith(".osz"):
+                file_path = os.path.join(folder_path, filename)
+                with contextlib.suppress(FileNotFoundError):
+                    os.remove(file_path)
+
+        # Optionally, create a new folder if it doesn't exist
+        if not os.path.exists(folder_path):
+            os.mkdir(folder_path)
 
         response = [
             requests.get(f'https://beatconnect.io/b/{self.mapset_id}'),
