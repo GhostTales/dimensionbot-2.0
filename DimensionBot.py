@@ -349,10 +349,8 @@ def run():
                 loaded_data = json.load(file)
                 for user_id, time_spent in loaded_data.items():
                     user_id = str(user_id)  # Ensure user_id is a string
-                    if user_id in vc_time:
-                        vc_time[user_id] += time_spent
-                    else:
-                        vc_time[user_id] = time_spent
+                    vc_time[user_id] = time_spent
+
         update_vc_time.start()
         backups_date.start()
         if not os.path.exists('osu_links.json'):
@@ -376,12 +374,21 @@ def run():
                                   9000000: 2500, 18000000: 5000, 36000000: 10000}
                     for milestone, hours in milestones.items():
                         if vc_time[user_id] == milestone:
-                            channel = bot.get_channel(559826045453205568) # replace with the ID of the "general" channel
+                            channel = bot.get_channel(
+                                559826045453205568)  # replace with the ID of the "general" channel
                             await channel.send(
                                 f"Congratulations! <@!{user_id}> has spent {hours} hours in a voice channel!")
+
+        # Debug: Print the vc_time dictionary before saving
+        print("vc_time before saving:", vc_time)
+
         # Save vc_time to a file
         with open("vc_time.json", "w") as file:
             json.dump(vc_time, file)
+
+    @update_vc_time.before_loop
+    async def before_update_vc_time():
+        await bot.wait_until_ready()
 
     @tasks.loop(minutes=5)
     async def backups_date():
