@@ -48,17 +48,14 @@ def run():
             member = str(ctx.author.id)
             if member in data:
                 member = data[member]
-            print(f'{member} 1')
 
         if '<' in username:
             member = username.replace('<', '').replace('@', '').replace('>', '')
             if member in data:
                 member = data[member]
-            print(f'{member} 2')
 
         if username != '' and '<' not in username:
             member = linking(username).user.id
-            print(f'{member} 3')
 
         stats = ''
 
