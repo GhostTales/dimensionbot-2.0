@@ -74,7 +74,7 @@ class osu_stats:
         mapset_download = f'map_files/{self.mapset_id} {self.mapset_artist} - {self.map_title}'
         current_map = f'{self.mapset_artist} - {self.map_title} ({self.mapset_creator}) [{self.map_diff.rstrip("?")}].osu'
 
-        def download_and_extract(index, resp):
+        async def download_and_extract(index, resp):
             try:
                 if os.path.exists(f"map_files/{current_map}"):
                     return None
