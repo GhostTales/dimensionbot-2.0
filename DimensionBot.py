@@ -366,9 +366,9 @@ def run():
                         continue
                     user_id = str(member.id)  # Ensure user_id is a string
                     if user_id not in vc_time:
-                        vc_time[user_id] = 1
+                        vc_time[user_id] = 60
                     else:
-                        vc_time[user_id] += 1
+                        vc_time[user_id] += 60
                     milestones = {90000: 25, 180000: 50, 360000: 100,
                                   900000: 250, 1800000: 500, 3600000: 1000,
                                   9000000: 2500, 18000000: 5000, 36000000: 10000}

@@ -75,7 +75,7 @@ class osu_stats:
 
         mapset_download = f'map_files/{self.mapset_id} {self.mapset_artist} - {self.map_title}'
 
-        def download_and_extract(index, resp):
+        async def download_and_extract(index, resp):
             try:
                 if os.path.exists(f'map_files/{self.mapset_artist} - {self.map_title} ({self.mapset_creator}) [{self.map_diff.rstrip("?")}].osu'):
                     return None
@@ -157,6 +157,8 @@ class osu_stats:
         self.stat_pp = calc_pp.performance(map).pp
 
         calc_fc_pp = Calculator(mods=self.mod_int_value)
+
+        calc_fc_pp.set_difficulty(calc_pp.performance(map).difficulty)
 
         calc_fc_pp.set_acc(self.stat_fc_acc)
         calc_fc_pp.set_n50(self.stat_n50)
