@@ -3,3 +3,4 @@ map_files/
 venv/
 backups/
 vc_time.json
+__pycache__/
