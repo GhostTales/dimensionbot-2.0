@@ -2,3 +2,4 @@
 map_files/
 venv/
 __pycache__/
+.lprof

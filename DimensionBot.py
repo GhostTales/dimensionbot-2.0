@@ -41,6 +41,9 @@ def run():
                                                colour=discord.Colour.red()))
 
     @bot.command()
+    #@profile
+    # make profile: kernprof -l DimensionBot.py
+    # read profile: python -m line_profiler DimensionBot.py.lprof
     async def rs(ctx, username=''):
         with open('osu_links.json', 'r') as file:
             data = json.load(file)

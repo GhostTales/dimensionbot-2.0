@@ -1,10 +1,9 @@
-import contextlib
 import os
 from ossapi import UserLookupKey, Ossapi
 import oppadc
 import requests
 import zipfile
-import shutil
+import glob
 import concurrent.futures
 from rosu_pp_py import Beatmap, Calculator
 
@@ -59,32 +58,31 @@ class osu_stats:
 
         # ___________ calc pp ___________ #
 
-        folder_path = 'map_files'
-        with contextlib.suppress(FileNotFoundError):
-            # Remove the folder and its contents
-            shutil.rmtree(folder_path)
-        # Create a new folder
-        os.mkdir(folder_path)
+        os.makedirs('map_files', exist_ok=True)
+        # Remove only files ending in .osu instead of the entire folder
+        osu_files = glob.glob('map_files/*.osz')
+        for file in osu_files:
+            os.remove(file)
 
         response = [
-            requests.get(f'https://beatconnect.io/b/{self.mapset_id}'),
+            #requests.get(f'https://beatconnect.io/b/{self.mapset_id}'), ###### way to fucking slow don't use
             requests.get(f'https://dl.sayobot.cn/beatmaps/download/novideo/{self.mapset_id}'),
-            requests.get(f'https://api.nerinyan.moe/d/{self.mapset_id}?nv=1'),
+            #requests.get(f'https://api.nerinyan.moe/d/{self.mapset_id}?nv=1'), ###### way to fucking slow don't use
             requests.get(f'https://api.chimu.moe/v1/download/{self.mapset_id}?n=1')
         ]
 
         mapset_download = f'map_files/{self.mapset_id} {self.mapset_artist} - {self.map_title}'
+        current_map = f'{self.mapset_artist} - {self.map_title} ({self.mapset_creator}) [{self.map_diff.rstrip("?")}].osu'
 
         def download_and_extract(index, resp):
             try:
-                if os.path.exists(f'map_files/{self.mapset_artist} - {self.map_title} ({self.mapset_creator}) [{self.map_diff.rstrip("?")}].osu'):
+                if os.path.exists(f"map_files/{current_map}"):
                     return None
 
-                with open(f'{mapset_download}_{index}.osz', 'wb') as file:
-                    file.write(resp.content)
+                with open(f'{mapset_download}_{index}.osz', 'wb') as folder:
+                    folder.write(resp.content)
                 with zipfile.ZipFile(f'{mapset_download}_{index}.osz', 'r') as zip_ref:
-                    osu_files = zip_ref.namelist()
-                    for file in osu_files:
+                    for file in zip_ref.namelist():
                         if self.map_diff is not None and file.endswith(f'[{self.map_diff.rstrip("?")}].osu'):
                             zip_ref.extract(file, 'map_files')
                             return file
@@ -99,6 +97,9 @@ class osu_stats:
             if result.result() is not None:
                 map_extract = result.result()
                 break
+
+        if map_extract == '':
+            map_extract = current_map
 
         self.MapInfo = oppadc.OsuMap(file_path=f'map_files/{map_extract}')
         self.map_max_combo = self.MapInfo.maxCombo()
