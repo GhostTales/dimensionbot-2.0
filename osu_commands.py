@@ -71,7 +71,7 @@ class osu_stats:
             requests.get(f'https://api.chimu.moe/v1/download/{self.mapset_id}?n=1')
         ]
 
-        mapset_download = f'map_files/{self.mapset_id} {self.mapset_artist} - {self.map_title}'
+        mapset_download = 'map_files/' + f'{self.mapset_id} {self.mapset_artist} - {self.map_title}'.translate(str.maketrans("", "", '*"/\\<>:|?'))
         current_map = f'{self.mapset_artist} - {self.map_title} ({self.mapset_creator}) [{self.map_diff}].osu'.translate(str.maketrans("", "", '*"/\\<>:|?'))
 
         def download_and_extract(index, resp):
