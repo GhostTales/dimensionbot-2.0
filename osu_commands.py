@@ -76,9 +76,6 @@ class osu_stats:
 
         async def download_and_extract(index, resp):
             try:
-                if os.path.exists(f"map_files/{current_map}"):
-                    return None
-
                 with open(f'{mapset_download}_{index}.osz', 'wb') as folder:
                     folder.write(resp.content)
                 with zipfile.ZipFile(f'{mapset_download}_{index}.osz', 'r') as zip_ref:
@@ -89,17 +86,17 @@ class osu_stats:
             except Exception:
                 return None
 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            results = [executor.submit(download_and_extract, index, resp) for index, resp in enumerate(response)]
-
         map_extract = ''
-        for result in results:
-            if result.result() is not None:
-                map_extract = result.result()
-                break
-
-        if map_extract == '':
+        if os.path.exists(f"map_files/{current_map}"):
             map_extract = current_map
+        else:
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                results = [executor.submit(download_and_extract, index, resp) for index, resp in enumerate(response)]
+
+            for result in results:
+                if result.result() is not None:
+                    map_extract = result.result()
+                    break
 
         self.MapInfo = oppadc.OsuMap(file_path=f'map_files/{map_extract}')
         self.map_max_combo = self.MapInfo.maxCombo()
