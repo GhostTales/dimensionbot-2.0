@@ -74,7 +74,6 @@ class osu_stats:
         mapset_download = 'map_files/' + f'{self.mapset_id} {self.mapset_artist} - {self.map_title}'.translate(str.maketrans("", "", '*"/\\<>:|?'))
         current_map = f'{self.mapset_artist} - {self.map_title} ({self.mapset_creator}) [{self.map_diff}].osu'.translate(str.maketrans("", "", '*"/\\<>:|?'))
 
-
         async def download_and_extract(index, resp):
             try:
                 with open(f'{mapset_download}_{index}.osz', 'wb') as folder:
@@ -101,7 +100,6 @@ class osu_stats:
 
         self.MapInfo = oppadc.OsuMap(file_path=f'map_files/{map_extract}')
         self.map_max_combo = self.MapInfo.maxCombo()
-
 
         self.mod_int_value = 0
 
