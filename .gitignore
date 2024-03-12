@@ -1,6 +1,5 @@
 # ignores all fiels that are not the program
 map_files/
-venv/
 map_image_card/
 __pycache__/
 .lprof
