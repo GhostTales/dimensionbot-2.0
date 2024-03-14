@@ -1,6 +1,6 @@
 # ignores all fiels that are not the program
 map_files/
-map_image_card/
+map_image_card/map_card.png
 __pycache__/
 .lprof
 vc_time.json
