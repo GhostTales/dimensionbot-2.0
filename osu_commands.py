@@ -1,10 +1,11 @@
+import asyncio
 import os
 from ossapi import UserLookupKey, Ossapi
 import oppadc
 import requests
 import zipfile
 import glob
-import concurrent.futures
+import discord
 from rosu_pp_py import Beatmap, Calculator
 
 client_id = 24667
@@ -12,7 +13,7 @@ client_secret = "3u3hoHG5DZ54zWWj4XRuf6a1wzXuIap5uBSqXIPT"
 
 
 class osu_stats:
-    def __init__(self, user, play_type, mode):
+    def __init__(self, ctx, user, play_type, mode):
         self.api = Ossapi(client_id, client_secret)
 
         # osu play data
@@ -42,7 +43,7 @@ class osu_stats:
         self.stat_n50 = self.play[0].statistics.count_50
         self.stat_n_miss = self.play[0].statistics.count_miss
         self.stat_mods = self.play[0].mods
-        self.stat_score = f'{self.play[0].score:,}'
+        self.stat_score = self.play[0].score
         self.stat_stars = self.api.beatmap_attributes(self.map_id, mods=self.stat_mods).attributes.star_rating
         self.stat_rank_grade = self.play[0].rank
         self.stat_achieved_combo = self.play[0].max_combo
@@ -64,39 +65,58 @@ class osu_stats:
         for file in osu_files:
             os.remove(file)
 
-        response = [
-            #requests.get(f'https://beatconnect.io/b/{self.mapset_id}'), ###### way to fucking slow don't use
-            requests.get(f'https://dl.sayobot.cn/beatmaps/download/novideo/{self.mapset_id}'),
-            #requests.get(f'https://api.nerinyan.moe/d/{self.mapset_id}?nv=1'), ###### way to fucking slow don't use
-            requests.get(f'https://api.chimu.moe/v1/download/{self.mapset_id}?n=1')
-        ]
-
         mapset_download = 'map_files/' + f'{self.mapset_id} {self.mapset_artist} - {self.map_title}'.translate(str.maketrans("", "", '*"/\\<>:|?'))
         current_map = f'{self.mapset_artist} - {self.map_title} ({self.mapset_creator}) [{self.map_diff}].osu'.translate(str.maketrans("", "", '*"/\\<>:|?'))
 
-        async def download_and_extract(index, resp):
-            try:
-                with open(f'{mapset_download}_{index}.osz', 'wb') as folder:
-                    folder.write(resp.content)
-                with zipfile.ZipFile(f'{mapset_download}_{index}.osz', 'r') as zip_ref:
-                    for file in zip_ref.namelist():
-                        if self.map_diff is not None and file.endswith(f'[{self.map_diff.rstrip("?")}].osu'):
-                            zip_ref.extract(file, 'map_files')
-                            return file
-            except Exception:
-                return None
+        def download_and_extract(url, file_to_extract):
+            # Step 1: Download the file
+            response = requests.get(url)
+            if response.status_code == 200:
+                temp_zip_path = 'temp.osz'
+                with open(temp_zip_path, 'wb') as f:
+                    f.write(response.content)
+            else:
+                raise Exception(f"Failed to download file from {url}")
+
+            # Step 2: Extract all .osu files
+            extracted_files = []
+            with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
+                for file_name in zip_ref.namelist():
+                    if file_name.endswith('.osu'):
+                        zip_ref.extract(file_name, "map_files/")
+                        extracted_files.append(os.path.join("map_files/", file_name))
+
+
+            # Step 3: Cleanup the temporary file
+            os.remove(temp_zip_path)
+
+            # Step 4: Return the file path
+            return file_to_extract
 
         map_extract = ''
         if os.path.exists(f"map_files/{current_map}"):
             map_extract = current_map
-        else:
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                results = [executor.submit(download_and_extract, index, resp) for index, resp in enumerate(response)]
 
-            for result in results:
-                if result.result() is not None:
-                    map_extract = result.result()
+        download_sites = {
+        f'https://beatconnect.io/b/{self.mapset_id}',
+        f'https://dl.sayobot.cn/beatmaps/download/novideo/{self.mapset_id}',
+        f'https://api.nerinyan.moe/d/{self.mapset_id}?nv=1'
+        }
+
+        if not os.path.exists(f"map_files/{current_map}"):
+            print("Downloading map")
+            for site in download_sites:
+                try:
+                    map_extract = download_and_extract(site, current_map)
+                except Exception as e:
+                    print(f"An error occurred: {e}")
+                if os.path.exists(f"map_files/{current_map}"):
                     break
+
+
+
+
+
 
         self.MapInfo = oppadc.OsuMap(file_path=f'map_files/{map_extract}')
         self.map_max_combo = self.MapInfo.maxCombo()
