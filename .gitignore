@@ -5,7 +5,4 @@ __pycache__/
 .lprof
 vc_time.json
 osu_links.json
-map_image_card/map_card.png
-/map_image_card
-/backups
-/map_image_card
+backups/
