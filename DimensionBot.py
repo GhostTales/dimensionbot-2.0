@@ -75,7 +75,7 @@ async def rs(ctx, username=''):
         print(f"An error occurred: {e}")
         play = None
 
-    print(play)
+    #print(play)
     if play is not None and play != "":
         #print(stats.MapInfo)
 
