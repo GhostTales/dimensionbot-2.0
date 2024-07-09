@@ -14,9 +14,6 @@ import re
 from help_list import commands_info
 from osu_commands import osu_stats, linking
 
-intents = discord.Intents.all()
-bot = commands.Bot(command_prefix='!', intents=intents)
-
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
@@ -248,17 +245,27 @@ async def on_message(message):
     if message.author.id == bot.user.id:
         return
 
-    greetings = {
-            r'\bh+e+l+o+\b': 'Hello! <:scymenHey:1071540827928662037>',
-            r'\bh+i+\b': 'Wassup! <:virgin:1064263792386637986>',
-            r'\bh+a+i+\b': 'Wassup! <:virgin:1064263792386637986>',
-            r'\bh+e+y+\b': 'Hey there! <a:petthepainaway:1062736826617561108>',
-            r'\bh+e+y+a+\b': 'Hey there! <a:petthepainaway:1062736826617561108>'
-    }
+    greetings = [
+            r'\bh+e+l+o+\b',
+            r'\bh+i+\b',
+            r'\bh+a+i+\b',
+            r'\bh+e+y+\b',
+            r'\bh+e+y+a+\b',
+            r'\bw+a+s+u+p+\b'
+    ]
 
-    for greet, response in greetings.items():
+    responses = [
+            'Hello! <:scymenHey:1071540827928662037>',
+            'Wassup! <:virgin:1064263792386637986>',
+            'Hey there! <a:petthepainaway:1062736826617561108>',
+            'Hai! <:scymenQt:1243537644932042832>',
+            'Heya! <:scymenFloosh:1260070773243248732>'
+
+    ]
+
+    for greet in greetings:
         if re.search(greet, message.content, re.IGNORECASE):
-            await message.channel.send(response)
+            await message.channel.send(responses[random.randint(0, len(responses) - 1)])
 
     simple_responses = {
             'owo': "*owo what's this?*",
