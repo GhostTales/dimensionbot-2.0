@@ -1,16 +1,16 @@
 # ignores all fiels that are not the program
 map_files/
 map_image_card/map_card.png
-__pycache__/
 .lprof
 vc_time.json
 osu_links.json
-/backups
+backups/
 vc_time.json
 /downloaded_svgs/frames/
 /downloaded_svgs/outputGif/
 /__pycache__
+__pycache__/
 downloaded_svgs/embedded_svg_1.svg
 downloaded_svgs/embedded_svg_2.svg
 downloaded_svgs/embedded_svg_3.svg
-/__pycache__
+
