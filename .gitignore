@@ -9,3 +9,4 @@ osu_links.json
 vc_time.json
 /downloaded_svgs/frames/
 /downloaded_svgs/outputGif/
+/__pycache__
