@@ -35,6 +35,6 @@ async def call_js_script(script_path, args=("", "")):
 
 
 # Run the main function
-#if __name__ == "__main__":
-    #dir_path = os.path.dirname(os.path.realpath(__file__))
-    #asyncio.run(call_js_script(script_path="capture-svg-frames.js", args=(dir_path + '\downloaded_svgs\embedded_svg_1.svg', '')))
+if __name__ == "__main__":
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    asyncio.run(call_js_script(script_path=r"C:/Users/Server/Desktop/dimensionbot-2.0/capture-svg-frames.js", args=(r"C:/Users/Server/Desktop/dimensionbot-2.0/downloaded_svgs/embedded_svg_1.svg", '')))

@@ -41,9 +41,9 @@ async def create_gif_from_pngs(png_folder, output_gif, delay=100, loop_start=20,
     )
 
 
-#if __name__ == "__main__":
-    #png_folder = "downloaded_svgs/frames/"
-    #output_gif = "downloaded_svgs/outputGif/output.gif"
+if __name__ == "__main__":
+    png_folder = "downloaded_svgs/frames/"
+    output_gif = "downloaded_svgs/outputGif/output.gif"
 
     # Run the asynchronous function
-    #asyncio.run(create_gif_from_pngs(png_folder, output_gif))
+    asyncio.run(create_gif_from_pngs(png_folder, output_gif))

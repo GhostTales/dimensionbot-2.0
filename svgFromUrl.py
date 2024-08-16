@@ -59,4 +59,4 @@ async def download_all_svgs(url, download_dir="downloaded_svgs"):
 
 
 # Example usage:
-#asyncio.run(download_all_svgs('https://osu-sig.vercel.app/card?user=Ghost-Tales&mode=std&lang=en&blur=100&round_avatar=true&animation=true&hue=218&w=1100&h=640'))
+asyncio.run(download_all_svgs('https://osu-sig.vercel.app/card?user=Ghost-Tales&mode=std&lang=en&blur=100&round_avatar=true&animation=true&hue=218&w=1100&h=640'))
