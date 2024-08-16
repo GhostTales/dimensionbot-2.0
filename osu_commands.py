@@ -255,6 +255,12 @@ class osu_stats:
         self.chart_map_progress = emotes[rounded_number // 5]
 
 class linking:
-    def __init__(self, string):
+    def __init__(self, name):
         self.api = Ossapi(client_id, client_secret)
-        self.user = self.api.user(string, key=UserLookupKey.USERNAME)
+        self.user = self.api.user(name, key=UserLookupKey.USERNAME)
+
+class User:
+    def __init__(self, id):
+        self.api = Ossapi(client_id, client_secret)
+        self.user = self.api.user(id, key=UserLookupKey.ID)
+

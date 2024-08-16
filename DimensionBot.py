@@ -1,5 +1,6 @@
 import contextlib
 import datetime
+import asyncio
 import json
 import os
 import random
@@ -12,7 +13,10 @@ from discord.ext import tasks, commands
 import re
 
 from help_list import commands_info
-from osu_commands import osu_stats, linking
+from osu_commands import osu_stats, linking, User
+from svgFromUrl import download_all_svgs
+from CallJsFromPy import call_js_script
+from PngToGif import create_gif_from_pngs
 
 
 intents = discord.Intents.all()
@@ -41,6 +45,48 @@ async def link(ctx, string=''):
                                             colour=discord.Colour.red()))
 
 @bot.command()
+async def osu(ctx, username=''):
+    with open('osu_links.json', 'r') as file:
+        data = json.load(file)
+    member = ''
+
+    if username == '':
+            member = str(ctx.author.id)
+            if member in data:
+                member = data[member]
+
+    if '<' in username:
+            member = username.replace('<@', '').replace('>', '')
+            if member in data:
+                member = data[member]
+
+    if username != '' and '<' not in username:
+        member = linking(name=username).user.id
+
+    username = User(id=member).user.username
+
+    embed = discord.Embed()
+
+    await download_all_svgs(f'https://osu-sig.vercel.app/card?user={username}&mode=std&lang=en&blur=5&round_avatar=true&animation=true&hue=218&w=1100&h=640')
+
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    await call_js_script(script_path="capture-svg-frames.js", args=(dir_path + '\downloaded_svgs\embedded_svg_1.svg', ''))
+
+    png_folder = "downloaded_svgs/frames/"
+    output_gif = "downloaded_svgs/outputGif/output.gif"
+    await create_gif_from_pngs(png_folder, output_gif)
+
+    file = discord.File("downloaded_svgs/outputGif/output.gif", filename="output.gif")
+    embed.set_image(url="attachment://output.gif")
+
+
+    message = await ctx.send(file=file)
+    await asyncio.sleep(10)
+    file = discord.File("downloaded_svgs/frames/frame_35.png", filename="frame_35.png")
+    embed.set_image(url="attachment://frame_35.png")
+    await message.edit(attachments=[file])
+
+@bot.command()
 async def rs(ctx, username=''):
     with open('osu_links.json', 'r') as file:
         data = json.load(file)
@@ -52,7 +98,7 @@ async def rs(ctx, username=''):
                 member = data[member]
 
     if '<' in username:
-            member = username.replace('<', '').replace('@', '').replace('>', '')
+            member = username.replace('<@', '').replace('>', '')
             if member in data:
                 member = data[member]
 
