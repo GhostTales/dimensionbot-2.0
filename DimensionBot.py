@@ -67,7 +67,7 @@ async def osu(ctx, username=''):
 
     gen_text = await ctx.send(
         embed=discord.Embed(
-            description=f'generating profile for {ctx.author.mention}',
+            description=f'generating profile for {username}',
             colour=discord.Colour.red()
         )
     )
