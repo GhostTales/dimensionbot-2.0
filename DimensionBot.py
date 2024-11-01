@@ -14,9 +14,9 @@ import re
 
 from help_list import commands_info
 from osu_commands import osu_stats, linking, User
-from svgFromUrl import download_all_svgs
-from CallJsFromPy import call_js_script
-from PngToGif import create_gif_from_pngs
+from capture_svg_frames import capture_svg_frames
+from create_gif import create_gif
+
 
 
 intents = discord.Intents.all()
@@ -65,25 +65,32 @@ async def osu(ctx, username=''):
 
     username = User(id=member).user.username
 
+    gen_text = await ctx.send(
+        embed=discord.Embed(
+            description=f'generating profile for {ctx.author.mention}',
+            colour=discord.Colour.red()
+        )
+    )
+
     embed = discord.Embed()
-
-    await download_all_svgs(f'https://osu-sig.vercel.app/card?user={username}&mode=std&lang=en&blur=5&round_avatar=true&animation=true&hue=218&w=1100&h=640')
-
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    await call_js_script(script_path="capture-svg-frames.js", args=(dir_path + '\downloaded_svgs\embedded_svg_1.svg', ''))
+    ## https://osu-sig.vercel.app/card?user={username}&mode=std&lang=en&blur=5&round_avatar=true&animation=true&hue=218&w=1100&h=640
+    capture_svg_frames(f'https://osu-sig.vercel.app/card?user={username}&mode=std&lang=en&blur=1&round_avatar=true&animation=true&hue=218&w=1100&h=640', output_dir="downloaded_svgs/frames")
 
     png_folder = "downloaded_svgs/frames/"
     output_gif = "downloaded_svgs/outputGif/output.gif"
-    await create_gif_from_pngs(png_folder, output_gif)
+    create_gif(png_folder, output_gif, fps=24, num_interpolated_frames=0)
 
     file = discord.File("downloaded_svgs/outputGif/output.gif", filename="output.gif")
     embed.set_image(url="attachment://output.gif")
 
+    await gen_text.delete()
 
     message = await ctx.send(file=file)
-    await asyncio.sleep(10)
-    file = discord.File("downloaded_svgs/frames/frame_35.png", filename="frame_35.png")
-    embed.set_image(url="attachment://frame_35.png")
+
+    await asyncio.sleep(1.9)
+    file = discord.File("downloaded_svgs/frames/frame_30.png", filename="frame_30.png")
+    embed.set_image(url="attachment://frame_30.png")
+
     await message.edit(attachments=[file])
 
 @bot.command()
