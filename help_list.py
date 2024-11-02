@@ -20,7 +20,7 @@ commands_info = [
             "description": "Displays your most recent score in osu or of the user specified after the command.\nExample: !rs Ghost-Tales",
         },
         {
-            "name": "Bot greetings",
+            "name": "Greetings",
             "description": '**hello**: The bot responds with "Hello! <:scymenHey:1071540827928662037>".\n**hi** or **hai**: The bot responds with "Wassup! <:virgin:1064263792386637986>".\n**hey** or **heya**: The bot responds with "Hey there! <a:petthepainaway:1062736826617561108>".',
         },
         {
