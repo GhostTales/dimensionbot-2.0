@@ -26,6 +26,7 @@ class osu_stats:
 
 
         # ___________ calc fc_acc ___________ #
+        self.play.accuracy = self.play.accuracy * 100
         self.max_n300 = self.map_obj_count - self.n100 - self.n50
         top = 300 * self.max_n300 + 100 * self.n100 + 50 * self.n50
         divider = 300 * (self.max_n300 + self.n100 + self.n50)
