@@ -120,47 +120,47 @@ async def rs(ctx, username=''):
 
     try:
         stats = osu_stats(ctx=ctx, user=member, play_type='recent', mode='osu')
-        play = stats.play
+        print(stats.play)
+
     except Exception as e:
         print(f"An error occurred: {e}")
-        play = None
+        stats.play = None
 
-    #print(play)
-    if play is not None and play != "":
-        #print(stats.MapInfo)
+    if stats.play is not None and stats.play != "":
 
-        pp = f'{"{:.2f}".format(stats.stat_pp)}PP ({"{:.2f}".format(stats.stat_fc_pp)}PP if fc)'
-        acc = f'{"{:.2f}".format(stats.stat_acc)}% ({"{:.2f}".format(stats.stat_fc_acc)}% if fc)\n'
+        pp = f'{"{:.2f}".format(stats.pp)}PP ({"{:.2f}".format(stats.fc_pp)}PP if fc)'
+        acc = f'{"{:.2f}".format(stats.play.accuracy)}% ({"{:.2f}".format(stats.stat_fc_acc)}% if fc)\n'
 
-        if stats.stat_fc_acc == stats.stat_acc:
-            pp = f'{"{:.2f}".format(stats.stat_pp)}PP'
-            acc = f'{"{:.2f}".format(stats.stat_acc)}% '
+        if stats.stat_fc_acc == stats.play.accuracy:
+            pp = f'{"{:.2f}".format(stats.pp)}PP'
+            acc = f'{"{:.2f}".format(stats.play.accuracy)}% '
 
-        hit = f'[{stats.stat_n300}/{stats.stat_n100}/{stats.stat_n50}/{stats.stat_n_miss}]'
-        map_stats = (f'**BPM:** {stats.map_bpm} ▸ **AR:** {"{:.1f}".format(stats.map_ar)} ▸ **OD:** {"{:.1f}".format(stats.map_od)}'
-                             f' ▸ **HP:** {"{:.1f}".format(stats.map_hp)} ▸ **CS:** {"{:.1f}".format(stats.map_cs)}')
+        hit = f'[{stats.n300}/{stats.n100}/{stats.n50}/{stats.nmiss}]'
+        map_stats = (f'**BPM:** {stats.beatmap.bpm} ▸ **AR:** {"{:.1f}".format(stats.beatmap.ar)} ▸ **OD:** {"{:.1f}".format(stats.beatmap.accuracy)}'
+                             f' ▸ **HP:** {"{:.1f}".format(stats.beatmap.drain)} ▸ **CS:** {"{:.1f}".format(stats.beatmap.cs)}')
 
-        if float(stats.stat_map_progress) != 100.0:
-                progress = f'▸ ({"{:.1f}".format(stats.stat_map_progress)}%)'
+        map_progress = 100 * (stats.n300 + stats.n100 + stats.n50 + stats.nmiss) / stats.map_obj_count
+        if float(map_progress) != 100.0:
+                progress = f'▸ ({"{:.1f}".format(map_progress)}%)'
         else: progress = ''
 
 
         recent = discord.Embed(description=f'{progress} ▸ {acc}▸ {pp}\n'
-                                                   f'▸ {stats.stat_score} ▸ x{stats.stat_achieved_combo}/{stats.map_max_combo} ▸ {hit}\n'
-                                                   f'▸ {map_stats}', colour=discord.Colour.orange())
+                            f'▸ {stats.play.total_score} ▸ x{stats.play.max_combo}/{stats.map_max_combo} ▸ {hit}\n'
+                            f'▸ {map_stats}', colour=discord.Colour.orange())
 
 
         # base image location to download from osu map
         base_image_pos = "map_image_card/map_card.png"
         # download map card
-        urllib.request.urlretrieve(stats.map_image, base_image_pos)
+        urllib.request.urlretrieve(stats.beatmapset.covers.card, base_image_pos)
 
         ranking_grade_set = "website"
 
         # open all images for editing
         base_image = Image.open(base_image_pos)
         middle_image = Image.open('map_image_card/rectangle.png')
-        top_image = Image.open(f'rank_grades/{ranking_grade_set}/{stats.stat_rank_grade}.png')
+        top_image = Image.open(f'rank_grades/{ranking_grade_set}/{stats.play.rank}.png')
 
         # edit all the images together
         base_image.paste(middle_image.resize((100, 100)), (-30, -65), middle_image.resize((100, 100)))
@@ -174,32 +174,34 @@ async def rs(ctx, username=''):
 
         recent.set_image(url='attachment://map_card.png')
 
-        recent.set_footer(icon_url=stats.player_avatar, text=f'{stats.player_name}  |  On osu! Bancho ')
-        recent.timestamp = stats.map_date_created
+        recent.set_footer(icon_url=stats.play._user.avatar_url, text=f'{stats.play._user.username}  |  On osu! Bancho ')
+        recent.timestamp = stats.play.ended_at
 
-        rank_status = discord.File(f'ranking_status/{stats.map_rank_status}.png', filename=f'{stats.map_rank_status}.png')
-        recent.set_author(name=f'{stats.map_title} [{stats.map_diff}] +{stats.stat_mods} [{"{:.2f}".format(stats.stat_stars)}★]',
-                                  url=f'https://osu.ppy.sh/beatmapsets/{stats.mapset_id}#osu/{stats.map_id}',
-                                  icon_url=f'attachment://{stats.map_rank_status}.png')
+        rank_status = discord.File(f'ranking_status/{stats.beatmap.status}.png', filename=f'{stats.beatmap.status}.png')
+
+        mods = "No Mod"
+        if stats.play.mods != []:
+            mods = ''
+            for i in range(len(stats.play.mods)):
+                mods += stats.play.mods[len(stats.play.mods)-i-1].acronym
+
+
+
+        recent.set_author(name=f'{stats.beatmapset.title} [{stats.beatmap.version}] +{mods} [{"{:.2f}".format(stats.beatmap.difficulty_rating)}★]',
+                                  url=f'https://osu.ppy.sh/beatmapsets/{stats.beatmapset.id}#osu/{stats.beatmap.id}',
+                                  icon_url=f'attachment://{stats.beatmap.status}.png')
 
         await ctx.send(files=[rank_status, map_card], embed=recent)
 
-    elif play is None and '<' not in username:
-            await ctx.send(embed=discord.Embed(description=f'{username} has no recent play data available',
-                                               colour=discord.Colour.red()))
-    elif play is None and username.replace('<', '').replace('@', '').replace('>', '') in data:
-            await ctx.send(embed=discord.Embed(description=f'{username} has no recent play data available',
-                                               colour=discord.Colour.red()))
-    elif play is None and '<' in username:
-            await ctx.send(embed=discord.Embed(description=f'{username} is not linked to an osu account',
-                                               colour=discord.Colour.red()))
-    elif play is None and str(ctx.author.id) not in data:
-            await ctx.send(embed=discord.Embed(description=f'{ctx.author.id} is not linked to an osu account',
-                                               colour=discord.Colour.red()))
+    elif stats.play is None:
+        if '<' not in username or username.replace('<', '').replace('@', '').replace('>', '') in data:
+            await ctx.send(embed=discord.Embed(description=f'{username} has no recent play data available', colour=discord.Colour.red()))
+
+        elif '<' in username or str(ctx.author.id) not in data:
+            await ctx.send(embed=discord.Embed(description=f'{username} is not linked to an osu account', colour=discord.Colour.red()))
 
     else:
-        await ctx.send(embed=discord.Embed(description="error contact <@341531784418164738>",
-                                                   colour=discord.Colour.red()))
+        await ctx.send(embed=discord.Embed(description="error contact <@341531784418164738>", colour=discord.Colour.red()))
 
 @bot.command()
 async def roll(ctx, number=100):

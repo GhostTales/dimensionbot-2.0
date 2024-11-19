@@ -1,5 +1,5 @@
 discord~=2.1.0
-ossapi~=4.0.0
+ossapi~=5.0.1
 Pillow~=9.5.0
 oppadc~=1.1
-requests~=2.28.2
+requests~=2.32.0
