@@ -157,32 +157,35 @@ class osu_stats:
         calc_fc_pp.set_combo(self.map_max_combo)
 
         self.fc_pp = calc_fc_pp.performance(map).pp
-
         # ___________ calc pp ___________ #
 
+        self.beatmap.difficulty_rating = self.api.beatmap_attributes(self.beatmap.id,mods=self.mod_int_value).attributes.star_rating
         import math
 
         if 'HR' in str(self.play.mods):
-            self.beatmap.ar = min(int(self.beatmap.ar) * 1.4, 10)
-            self.beatmap.accuracy = min(int(self.beatmap.accuracy) * 1.4, 10)
-            self.beatmap.drain = min(int(self.beatmap.drain) * 1.4, 10)
-            self.beatmap.cs = min(int(self.beatmap.cs) * 1.3, 10)
+            self.beatmap.ar = min(self.beatmap.ar * 1.4, 10)
+            self.beatmap.accuracy = min(self.beatmap.accuracy * 1.4, 10)
+            self.beatmap.drain = min(self.beatmap.drain * 1.4, 10)
+            self.beatmap.cs = min(self.beatmap.cs * 1.3, 10)
 
         if 'EZ' in str(self.play.mods):
-            self.beatmap.ar = int(self.beatmap.ar) * 0.5
-            self.beatmap.accuracy = int(self.beatmap.accuracy) * 0.5
-            self.beatmap.drain = int(self.beatmap.drain) * 0.5
-            self.beatmap.cs = int(self.beatmap.cs) * 0.5
+            self.beatmap.ar *= 0.5
+            self.beatmap.accuracy *= 0.5
+            self.beatmap.drain *= 0.5
+            self.beatmap.cs *= 0.5
 
         if 'DT' in str(self.play.mods):
-            self.beatmap.bpm = int(self.beatmap.bpm) * 1.5
-            self.beatmap.ar = min(0.126e-1 * int(self.beatmap.ar) ** 2 + 0.4833e0 * int(self.beatmap.ar) + 5, 11.11)
-            self.beatmap.accuracy = min(0.6667 * int(self.beatmap.accuracy) + 4.4427, 11.11)
+            print('DT')
+            self.beatmap.bpm *= 1.5
+            self.beatmap.ar = min(0.126e-1 * self.beatmap.ar ** 2 + 0.4833e0 * self.beatmap.ar + 5, 11.11)
+            self.beatmap.accuracy = min(0.6667 * self.beatmap.accuracy + 4.4427, 11.11)
 
         if 'HT' in str(self.play.mods):
-            self.beatmap.bpm = int(self.beatmap.bpm) * 0.75
-            self.beatmap.ar = min(2.89 + 12.1708 * math.sin(0.1226 * int(self.beatmap.ar) - 0.6973), 9)
-            self.beatmap.accuracy = min(1.3333 * int(self.beatmap.accuracy) - 4.4427, 11.11)
+            self.beatmap.bpm = self.beatmap.bpm * 0.75
+            self.beatmap.ar = min(2.89 + 12.1708 * math.sin(0.1226 * self.beatmap.ar - 0.6973), 9)
+            self.beatmap.accuracy = min(1.3333 * self.beatmap.accuracy - 4.4427, 11.11)
+
+
 class linking:
     def __init__(self, name):
         self.api = Ossapi(client_id, client_secret)
