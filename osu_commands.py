@@ -23,6 +23,7 @@ class osu_stats:
         self.n100 = self.play.statistics.ok or 0
         self.n300 = self.play.statistics.great or 0
         self.nmiss = self.play.statistics.miss or 0
+        self.pp = self.play.pp
 
 
         # ___________ calc fc_acc ___________ #
@@ -134,20 +135,8 @@ class osu_stats:
                 self.mod_int_value += mod_values[mod]
 
         map = Beatmap(path=f'map_files/{map_extract}')
-        calc_pp = Calculator(mods=self.mod_int_value)
-
-        calc_pp.set_acc(self.play.accuracy)
-        calc_pp.set_n50(self.n50)
-        calc_pp.set_n100(self.n100)
-        calc_pp.set_n300(self.n300)
-        calc_pp.set_n_misses(self.nmiss)
-        calc_pp.set_combo(self.play.max_combo)
-
-        self.pp = calc_pp.performance(map).pp
 
         calc_fc_pp = Calculator(mods=self.mod_int_value)
-
-        calc_fc_pp.set_difficulty(calc_pp.performance(map).difficulty)
 
         calc_fc_pp.set_acc(self.stat_fc_acc)
         calc_fc_pp.set_n50(self.n50)
@@ -159,7 +148,7 @@ class osu_stats:
         self.fc_pp = calc_fc_pp.performance(map).pp
         # ___________ calc pp ___________ #
 
-        self.beatmap.difficulty_rating = self.api.beatmap_attributes(self.beatmap.id,mods=self.mod_int_value).attributes.star_rating
+        self.beatmap.difficulty_rating = self.api.beatmap_attributes(self.beatmap.id, mods=self.mod_int_value).attributes.star_rating
         import math
 
         if 'HR' in str(self.play.mods):
