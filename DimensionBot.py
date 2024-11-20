@@ -131,7 +131,7 @@ async def rs(ctx, username=''):
         pp = f'**{"{:.2f}".format(stats.pp)}PP** ({"{:.2f}".format(stats.fc_pp)}PP if fc)'
         acc = f'{"{:.2f}".format(stats.play.accuracy)}% ({"{:.2f}".format(stats.stat_fc_acc)}% if fc)\n'
 
-        if stats.stat_fc_acc == stats.play.accuracy:
+        if stats.stat_fc_acc <= stats.play.accuracy:
             pp = f'**{"{:.2f}".format(stats.pp)}PP**'
             acc = f'{"{:.2f}".format(stats.play.accuracy)}% '
 
