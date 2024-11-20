@@ -128,11 +128,11 @@ async def rs(ctx, username=''):
 
     if stats.play is not None and stats.play != "":
 
-        pp = f'{"{:.2f}".format(stats.pp)}PP ({"{:.2f}".format(stats.fc_pp)}PP if fc)'
+        pp = f'**{"{:.2f}".format(stats.pp)}PP** ({"{:.2f}".format(stats.fc_pp)}PP if fc)'
         acc = f'{"{:.2f}".format(stats.play.accuracy)}% ({"{:.2f}".format(stats.stat_fc_acc)}% if fc)\n'
 
         if stats.stat_fc_acc == stats.play.accuracy:
-            pp = f'{"{:.2f}".format(stats.pp)}PP'
+            pp = f'**{"{:.2f}".format(stats.pp)}PP**'
             acc = f'{"{:.2f}".format(stats.play.accuracy)}% '
 
         hit = f'[{stats.n300}/{stats.n100}/{stats.n50}/{stats.nmiss}]'
@@ -179,15 +179,7 @@ async def rs(ctx, username=''):
 
         rank_status = discord.File(f'ranking_status/{stats.beatmap.status}.png', filename=f'{stats.beatmap.status}.png')
 
-        mods = "No Mod"
-        if stats.play.mods != []:
-            mods = ''
-            for i in range(len(stats.play.mods)):
-                mods += stats.play.mods[len(stats.play.mods)-i-1].acronym
-
-
-
-        recent.set_author(name=f'{stats.beatmapset.title} [{stats.beatmap.version}] +{mods} [{"{:.2f}".format(stats.beatmap.difficulty_rating)}★]',
+        recent.set_author(name=f'{stats.beatmapset.title} [{stats.beatmap.version}] +{stats.play.mods} [{"{:.2f}".format(stats.beatmap.difficulty_rating)}★]',
                                   url=f'https://osu.ppy.sh/beatmapsets/{stats.beatmapset.id}#osu/{stats.beatmap.id}',
                                   icon_url=f'attachment://{stats.beatmap.status}.png')
 

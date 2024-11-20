@@ -26,6 +26,15 @@ class osu_stats:
         self.pp = self.play.pp
 
 
+        if self.play.mods != []:
+            mods = ''
+            for i in range(len(self.play.mods)):
+                mods += self.play.mods[len(self.play.mods) - i - 1].acronym
+            self.play.mods = mods
+        else:
+            self.play.mods = "No Mod"
+
+
         # ___________ calc fc_acc ___________ #
         self.play.accuracy = self.play.accuracy * 100
         self.max_n300 = self.map_obj_count - self.n100 - self.n50
@@ -135,6 +144,17 @@ class osu_stats:
                 self.mod_int_value += mod_values[mod]
 
         map = Beatmap(path=f'map_files/{map_extract}')
+        if self.pp == None:
+            calc_pp = Calculator(mods=self.mod_int_value)
+
+            calc_pp.set_acc(self.play.accuracy)
+            calc_pp.set_n50(self.n50)
+            calc_pp.set_n100(self.n100)
+            calc_pp.set_n300(self.n300)
+            calc_pp.set_n_misses(self.nmiss)
+            calc_pp.set_combo(self.play.max_combo)
+
+            self.pp = calc_pp.performance(map).pp
 
         calc_fc_pp = Calculator(mods=self.mod_int_value)
 
