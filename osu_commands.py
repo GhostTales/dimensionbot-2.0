@@ -36,11 +36,80 @@ class osu_stats:
 
 
         # ___________ calc fc_acc ___________ #
+        # stable
         self.play.accuracy = self.play.accuracy * 100
         self.max_n300 = self.map_obj_count - self.n100 - self.n50
         top = 300 * self.max_n300 + 100 * self.n100 + 50 * self.n50
         divider = 300 * (self.max_n300 + self.n100 + self.n50)
-        self.stat_fc_acc = 100 * (top / divider)
+        self.stable_fc_acc = 100 * (top / divider)
+
+        # lazer
+        def calculate_accuracy(max_stats, stats, full_combo=False):
+            # Define base scores for each HitResult
+            base_scores = {
+                'great': 300,
+                'perfect': 300,  # Same as great
+                'ok': 100,
+                'meh': 50,
+                'miss': 0,
+                'large_bonus': 50,
+                'small_bonus': 10,
+                'slider_tail_hit': 150,
+                'slider_tail_miss': 0,
+                'large_tick_hit': 30,
+                'large_tick_miss': 0,
+                'small_tick_hit': 10,
+                'small_tick_miss': 0,
+                'good': 200,
+                'ignore_hit': 0,  # Doesn't contribute to accuracy
+                'ignore_miss': 0  # Doesn't contribute to accuracy
+            }
+            if full_combo:
+                base_scores['miss'] = base_scores['great']
+                base_scores['large_tick_miss'] = base_scores['large_tick_hit']
+                #base_scores['small_tick_miss'] = base_scores['small_tick_hit']
+                base_scores['slider_tail_miss'] = base_scores['slider_tail_hit']
+
+            # Function to safely handle None values
+            def get_value_or_zero(stat, stats_dict):
+                return stats_dict.get(stat, 0) or 0  # Return 0 if value is None
+
+            # Calculate maximum possible base score
+            current_maximum_base_score = sum(
+                get_value_or_zero(key, max_stats) * base_scores.get(key, 0) for key in base_scores)
+
+            # Calculate player's achieved base score
+            current_base_score = sum(get_value_or_zero(key, stats) * base_scores.get(key, 0) for key in base_scores)
+
+            # Calculate accuracy
+            accuracy = (current_base_score / current_maximum_base_score) * 100 if current_maximum_base_score > 0 else 0
+            #print(current_base_score, current_maximum_base_score, accuracy)
+            #print(stats)
+            #print(max_stats)
+            return accuracy
+
+        stats = {
+            'great': self.play.statistics.great,
+            'perfect': self.play.statistics.perfect,  # Same as great
+            'ok': self.play.statistics.ok,
+            'meh': self.play.statistics.meh,
+            'miss': self.play.statistics.miss,
+            'large_bonus': self.play.statistics.large_bonus,
+            'small_bonus': self.play.statistics.small_bonus,
+            'slider_tail_hit': self.play.statistics.slider_tail_hit,
+            'slider_tail_miss': self.play.maximum_statistics['slider_tail_hit'] - self.play.statistics.slider_tail_hit,
+            'large_tick_hit': self.play.statistics.large_tick_hit,
+            'large_tick_miss': self.play.statistics.large_tick_miss,
+            'small_tick_hit': self.play.statistics.small_tick_hit,
+            'small_tick_miss': self.play.statistics.small_tick_miss,
+            'good': self.play.statistics.good,
+            'ignore_hit': self.play.statistics.ignore_hit,  # Doesn't contribute to accuracy
+            'ignore_miss': self.play.statistics.ignore_miss  # Doesn't contribute to accuracy
+        }
+
+        self.calculated_fc_acc = calculate_accuracy(max_stats=self.play.maximum_statistics, stats=stats, full_combo=True)
+        self.calculated_acc = calculate_accuracy(max_stats=self.play.maximum_statistics, stats=stats, full_combo=False)
+
         # ___________ calc fc_acc ___________ #
 
         # ___________ calc pp ___________ #
@@ -158,7 +227,7 @@ class osu_stats:
 
         calc_fc_pp = Calculator(mods=self.mod_int_value)
 
-        calc_fc_pp.set_acc(self.stat_fc_acc)
+        calc_fc_pp.set_acc(self.calculated_fc_acc)
         calc_fc_pp.set_n50(self.n50)
         calc_fc_pp.set_n100(self.n100)
         calc_fc_pp.set_n300(self.max_n300)

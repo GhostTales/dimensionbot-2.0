@@ -128,12 +128,13 @@ async def rs(ctx, username=''):
 
     if stats.play is not None and stats.play != "":
 
-        pp = f'**{"{:.2f}".format(stats.pp)}PP** ({"{:.2f}".format(stats.fc_pp)}PP if fc)'
-        acc = f'{"{:.2f}".format(stats.play.accuracy)}% ({"{:.2f}".format(stats.stat_fc_acc)}% if fc)\n'
 
-        if stats.stat_fc_acc <= stats.play.accuracy:
+        if stats.calculated_fc_acc == stats.calculated_acc and stats.play.statistics.large_tick_miss <= 0:
             pp = f'**{"{:.2f}".format(stats.pp)}PP**'
             acc = f'{"{:.2f}".format(stats.play.accuracy)}% '
+        else:
+            pp = f'**{"{:.2f}".format(stats.pp)}PP** ({"{:.2f}".format(stats.fc_pp)}PP if fc)'
+            acc = f'{"{:.2f}".format(stats.play.accuracy)}% ({"{:.2f}".format(stats.calculated_fc_acc)}% if fc)\n'
 
         hit = f'[{stats.n300}/{stats.n100}/{stats.n50}/{stats.nmiss}]'
         map_stats = (f'**BPM:** {stats.beatmap.bpm} ▸ **AR:** {"{:.1f}".format(stats.beatmap.ar)} ▸ **OD:** {"{:.1f}".format(stats.beatmap.accuracy)}'
