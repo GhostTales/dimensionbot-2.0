@@ -44,7 +44,7 @@ class osu_stats:
         self.stable_fc_acc = 100 * (top / divider)
 
         # lazer
-        def calculate_accuracy(max_stats, stats, full_combo=False):
+        def calculate_accuracy(max_stats, stats, full_combo=False, passed=False):
             # Define base scores for each HitResult
             base_scores = {
                 'great': 300,
@@ -64,11 +64,21 @@ class osu_stats:
                 'ignore_hit': 0,  # Doesn't contribute to accuracy
                 'ignore_miss': 0  # Doesn't contribute to accuracy
             }
+
+            # adjust to full combo
             if full_combo:
                 base_scores['miss'] = base_scores['great']
                 base_scores['large_tick_miss'] = base_scores['large_tick_hit']
-                #base_scores['small_tick_miss'] = base_scores['small_tick_hit']
+                # base_scores['small_tick_miss'] = base_scores['small_tick_hit']
                 base_scores['slider_tail_miss'] = base_scores['slider_tail_hit']
+            # calculate if player quit out before finish map
+            if not passed:
+                stats['great'] = max_stats['great'] - ((stats['ok'] or 0) + (stats['meh'] or 0) + (stats['miss'] or 0))
+                stats['slider_tail_hit'] = max_stats['slider_tail_hit'] - (stats['slider_tail_miss'] or 0)
+                stats['large_tick_hit'] = max_stats['large_tick_hit']
+                stats['large_bonus'] = max_stats['large_bonus']
+                stats['small_bonus'] = max_stats['small_bonus']
+
 
             # Function to safely handle None values
             def get_value_or_zero(stat, stats_dict):
@@ -84,8 +94,6 @@ class osu_stats:
             # Calculate accuracy
             accuracy = (current_base_score / current_maximum_base_score) * 100 if current_maximum_base_score > 0 else 0
             #print(current_base_score, current_maximum_base_score, accuracy)
-            #print(stats)
-            #print(max_stats)
             return accuracy
 
         stats = {
@@ -97,7 +105,7 @@ class osu_stats:
             'large_bonus': self.play.statistics.large_bonus,
             'small_bonus': self.play.statistics.small_bonus,
             'slider_tail_hit': self.play.statistics.slider_tail_hit,
-            'slider_tail_miss': self.play.maximum_statistics['slider_tail_hit'] - self.play.statistics.slider_tail_hit,
+            'slider_tail_miss': self.play.statistics.ignore_miss,
             'large_tick_hit': self.play.statistics.large_tick_hit,
             'large_tick_miss': self.play.statistics.large_tick_miss,
             'small_tick_hit': self.play.statistics.small_tick_hit,
@@ -107,8 +115,17 @@ class osu_stats:
             'ignore_miss': self.play.statistics.ignore_miss  # Doesn't contribute to accuracy
         }
 
-        self.calculated_fc_acc = calculate_accuracy(max_stats=self.play.maximum_statistics, stats=stats, full_combo=True)
-        self.calculated_acc = calculate_accuracy(max_stats=self.play.maximum_statistics, stats=stats, full_combo=False)
+        self.calculated_acc = calculate_accuracy(
+            max_stats=self.play.maximum_statistics,
+            stats=stats,
+            full_combo=False,
+            passed=self.play.passed)
+
+        self.calculated_fc_acc = calculate_accuracy(
+            max_stats=self.play.maximum_statistics,
+            stats=stats,
+            full_combo=True,
+            passed=self.play.passed)
 
         # ___________ calc fc_acc ___________ #
 
