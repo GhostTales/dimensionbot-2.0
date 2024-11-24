@@ -105,7 +105,7 @@ class osu_stats:
             'large_bonus': self.play.statistics.large_bonus,
             'small_bonus': self.play.statistics.small_bonus,
             'slider_tail_hit': self.play.statistics.slider_tail_hit,
-            'slider_tail_miss': self.play.statistics.ignore_miss,
+            'slider_tail_miss': self.play.maximum_statistics['slider_tail_hit'] - self.play.statistics.slider_tail_hit,
             'large_tick_hit': self.play.statistics.large_tick_hit,
             'large_tick_miss': self.play.statistics.large_tick_miss,
             'small_tick_hit': self.play.statistics.small_tick_hit,
