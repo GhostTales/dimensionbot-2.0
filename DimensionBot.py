@@ -129,7 +129,7 @@ async def rs(ctx, username=''):
     if stats.play is not None and stats.play != "":
 
 
-        if stats.calculated_fc_acc == stats.calculated_acc and stats.play.statistics.large_tick_miss <= 0:
+        if stats.calculated_fc_acc == stats.calculated_acc and (stats.play.statistics.large_tick_miss or 0) <= 0:
             pp = f'**{"{:.2f}".format(stats.pp)}PP**'
             acc = f'{"{:.2f}".format(stats.play.accuracy)}% '
         else:
