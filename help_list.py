@@ -1,7 +1,7 @@
 commands_info = [
         {
             "name": "!help",
-            "description": "Displays a message with information about the bot's commands and functionality, including greetings and pet emotes that trigger specific responses.",
+            "description": "Displays a message with information about the bot's commands and functionality, including greetings and that trigger specific responses.",
         },
         {
             "name": "!roll",
