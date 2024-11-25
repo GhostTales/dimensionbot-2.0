@@ -324,19 +324,6 @@ async def on_message(message):
         if msg in message.content.lower():
             await message.channel.send(response)
 
-    pet_emotes = {
-            ':petthepainaway:': '<a:petthepainaway:1062736826617561108>',
-            ':Petkizu:': '<a:Petkizu:1069555999633059840>',
-            ':nedpet:': '<a:nedpet:1069621576930164858>',
-            ':Petelle:': '<a:Petelle:1069558979216281682>',
-            ':KayPet:': '<a:KayPet:880356602803261462>',
-            ':Petrainy:': '<a:Petrainy:1062735394132742205>'
-        }
-
-    for emote, response in pet_emotes.items():
-        if emote in message.content:
-            await message.channel.send(response)
-
     await bot.process_commands(message)
 
 @bot.event
@@ -432,8 +419,13 @@ async def update_vc_time():
                                   9000000: 2500, 18000000: 5000, 36000000: 10000}
                 for milestone, hours in milestones.items():
                     if vc_time[user_id] == milestone:
-                        channel = bot.get_channel(559826045453205568)  # replace with the ID of the "general" channel
-                        await channel.send(f"Congratulations! <@!{user_id}> has spent {hours} hours in a voice channel!")
+                        channels = bot.get_all_channels() # replace with the ID of the "general" channel
+                        channel_id = 931084168098623492
+                        for channel in channels:
+                            if channel.name == "general":
+                                channel_id = channel.id
+                        await bot.get_channel(channel_id).send(f"Congratulations! <@!{user_id}> you have spent {hours} hours in a voice channel!")
+
 
     # Save vc_time to a file
     with open("vc_time.json", "w") as file:
