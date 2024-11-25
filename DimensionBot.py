@@ -419,12 +419,19 @@ async def update_vc_time():
                                   9000000: 2500, 18000000: 5000, 36000000: 10000}
                 for milestone, hours in milestones.items():
                     if vc_time[user_id] == milestone:
-                        channels = bot.get_all_channels() # replace with the ID of the "general" channel
-                        channel_id = 931084168098623492
-                        for channel in channels:
-                            if channel.name == "general":
-                                channel_id = channel.id
-                        await bot.get_channel(channel_id).send(f"Congratulations! <@!{user_id}> you have spent {hours} hours in a voice channel!")
+                        channel_id = 931084168098623492 # default to test server
+
+                        for guild in bot.guilds:
+                            for channel in guild.channels:
+                                if channel.name.lower() == "general" and channel.type.name == "text":
+                                    if channel.guild.name == guild.name:
+                                        for vc in guild.voice_channels:
+                                            for member in vc.members:
+                                                if member.id == user_id:
+                                                    #print(channel.id, channel.name, channel.guild.name)
+                                                    channel_id = channel.id
+
+                        await bot.get_channel(channel_id).send(f"Congratulations! <@!{user_id}> has spent {hours} hours in a voice channel!")
 
 
     # Save vc_time to a file
