@@ -449,4 +449,11 @@ async def backups_date():
     if not os.path.exists(backup_file) or json.load(open("vc_time.json", "r")) != json.load(open(backup_file, "r")):
         shutil.copy("vc_time.json", backup_file)
 
-bot.run('MTA5MTA5MDE3NjUwMTA5NjUzMA.G4nuJn.Ud1Mvr44LZqkjDpsiwBR6ZCL4z4pic4AXqHDrQ')
+
+with open("Credentials.json") as json_file:
+    json_data = json.load(json_file)
+    token = json_data["Credentials"][0]["Token"]
+    #token = json_data["Credentials"][0]["Token_Dev"]
+
+
+bot.run(token)
