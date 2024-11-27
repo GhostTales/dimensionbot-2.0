@@ -2,10 +2,7 @@
 map_files/
 map_image_card/map_card.png
 .lprof
-vc_time.json
-osu_links.json
 backups/
-vc_time.json
 /downloaded_svgs/frames/
 /downloaded_svgs/outputGif/
 /__pycache__
