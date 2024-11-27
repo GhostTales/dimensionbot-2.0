@@ -79,14 +79,19 @@ async def get_member(ctx, username, data_file='osu_links.json'):
             member = data[member]
 
     elif username != '' and '<' not in username:
-        member = await linking(username).user.id
+        user = await linking(username).user
+        member = user.id
 
     return member
 
 @bot.command()
 async def osu(ctx, username=''):
     member = await get_member(ctx=ctx, username=username)
-    username = User(id=member).user.username
+    user = await User(user_id=member).user
+    username = user.username
+
+    user_directory = f"downloaded_svgs/{user.id}"
+    os.makedirs(user_directory, exist_ok=True)
 
     message = await ctx.send(
         embed=discord.Embed(
@@ -95,25 +100,30 @@ async def osu(ctx, username=''):
         )
     )
 
-    embed = discord.Embed()
-    ## https://osu-sig.vercel.app/card?user={username}&mode=std&lang=en&blur=5&round_avatar=true&animation=true&hue=218&w=1100&h=640
-    await capture_svg_frames(f'https://osu-sig.vercel.app/card?user={username}&mode=std&lang=en&blur=1&round_avatar=true&animation=true&hue=218&w=1100&h=640', output_dir="downloaded_svgs/frames")
 
-    png_folder = "downloaded_svgs/frames/"
-    output_gif = "downloaded_svgs/outputGif/output.gif"
+    ## https://osu-sig.vercel.app/card?user={username}&mode=std&lang=en&blur=5&round_avatar=true&animation=true&hue=218&w=1100&h=640
+
+    card_url = f'https://osu-sig.vercel.app/card?user={username}&mode=std&lang=en&blur=1&round_avatar=true&animation=true&hue=218&w=1100&h=640'
+    await capture_svg_frames(card_url, output_dir=f"{user_directory}/frames")
+
+    png_folder = f"{user_directory}/frames/"
+    output_gif = f"{user_directory}/outputGif/"
+
     create_gif(png_folder, output_gif, fps=24, num_interpolated_frames=0)
 
-    gif = discord.File("downloaded_svgs/outputGif/output.gif", filename="output.gif")
-    embed.set_image(url="attachment://output.gif")
+    gif = discord.File(f"{output_gif}/output.gif", filename="output.gif")
+
 
     await message.edit(embed=None, attachments=[gif])
 
 
-    await asyncio.sleep(1.8)
-    image = discord.File("downloaded_svgs/frames/frame_30.png", filename="frame_30.png")
-    embed.set_image(url="attachment://frame_30.png")
+    await asyncio.sleep(1.9)
+    image = discord.File(f"{user_directory}/frames/frame_30.png", filename="frame_30.png")
+
 
     await message.edit(attachments=[image])
+
+    shutil.rmtree(user_directory)
 
 
 @bot.command()
@@ -475,8 +485,8 @@ async def backups_date():
 
 with open("Credentials.json") as json_file:
     json_data = json.load(json_file)
-    token = json_data["Credentials"][0]["Token"]
-    #token = json_data["Credentials"][0]["Token_Dev"]
+    #token = json_data["Credentials"][0]["Token"]
+    token = json_data["Credentials"][0]["Token_Dev"]
 
 
 bot.run(token)

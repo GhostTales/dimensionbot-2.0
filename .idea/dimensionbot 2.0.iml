@@ -5,6 +5,7 @@
       <excludeFolder url="file://$MODULE_DIR$/map_files" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
       <excludeFolder url="file://$MODULE_DIR$/backups" />
+      <excludeFolder url="file://$MODULE_DIR$/downloaded_svgs" />
       <excludeFolder url="file://$MODULE_DIR$/downloaded_svgs/frames" />
       <excludeFolder url="file://$MODULE_DIR$/downloaded_svgs/outputGif" />
       <excludeFolder url="file://$MODULE_DIR$/frames" />

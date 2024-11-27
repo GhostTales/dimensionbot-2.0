@@ -10,10 +10,30 @@ from ossapi import OssapiAsync
 
 client_id = 24667
 client_secret = "3u3hoHG5DZ54zWWj4XRuf6a1wzXuIap5uBSqXIPT"
-
+api = OssapiAsync(client_id, client_secret)
 
 async def async_api_call(call):
     return await call
+
+class osu_stats_async:
+    def __init__(self, ctx, user, play_type, mode):
+
+        async def play_stats(user, play_type, mode):
+            user_scores = await api.user_scores(user, play_type, include_fails=True, mode=mode, limit=1)
+            play = user_scores[0]
+            beatmap = await play.beatmap
+            beatmapset = await play.beatmapset
+            map_obj_count = await (beatmap.count_circles + beatmap.count_sliders + beatmap.count_spinners)
+            n50 = play.statistics.meh or 0
+            n100 = play.statistics.ok or 0
+            n300 = play.statistics.great or 0
+            nmiss = play.statistics.miss or 0
+            pp = play.pp
+
+            return {play, beatmap, beatmapset, map_obj_count, n50, n100, n300, nmiss, pp}
+
+        play_stats(user, play_type, mode)
+
 
 class osu_stats:
     def __init__(self, ctx, user, play_type, mode):
@@ -288,13 +308,10 @@ class osu_stats:
 
 class linking:
     def __init__(self, name):
-        api = OssapiAsync(client_id, client_secret)
         self.user = async_api_call(api.user(name, key=UserLookupKey.USERNAME))
 
 
 
 class User:
-    def __init__(self, id):
-        self.api = Ossapi(client_id, client_secret)
-        self.user = self.api.user(id, key=UserLookupKey.ID)
-
+    def __init__(self, user_id):
+        self.user = async_api_call(api.user(user_id, key=UserLookupKey.ID))

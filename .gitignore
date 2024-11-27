@@ -3,8 +3,7 @@ map_files/
 map_image_card/map_card.png
 .lprof
 backups/
-/downloaded_svgs/frames/
-/downloaded_svgs/outputGif/
+downloaded_svgs/
 /__pycache__
 __pycache__/
 /frames

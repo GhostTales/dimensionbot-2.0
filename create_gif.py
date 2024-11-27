@@ -1,13 +1,14 @@
 from PIL import Image
 import os
 
+
 def interpolate_frames(img1, img2, num_interpolated_frames):
     """Generate interpolated frames between two images."""
     frames = []
 
     for t in range(num_interpolated_frames + 1):
         alpha = t / (num_interpolated_frames + 1)  # Normalized interpolation factor
-        interpolated_frame = Image.blend(img1, img2, alpha)
+        interpolated_frame =  Image.blend(img1, img2, alpha)
         frames.append(interpolated_frame)
 
     return frames
@@ -17,6 +18,7 @@ def create_gif(frame_folder, output_path, fps=60, frame_prefix="frame_", frame_e
                num_interpolated_frames=2):
     frames = []
     duration = int(1000 / fps)  # Duration per frame in milliseconds for the specified FPS
+    os.makedirs(output_path, exist_ok=True)
 
     # Calculate the total number of frames by counting matching files in the directory
     num_frames = len(
@@ -39,7 +41,7 @@ def create_gif(frame_folder, output_path, fps=60, frame_prefix="frame_", frame_e
         frames = [frame.convert("RGB").quantize(method=Image.MEDIANCUT) for frame in frames]
 
         # Save frames as a GIF with higher quality settings
-        frames[0].save(output_path, format='GIF', append_images=frames[1:],
+        frames[0].save(f"{output_path}/output.gif", format='GIF', append_images=frames[1:],
                        save_all=True, duration=duration, loop=0, dither=Image.NONE)  # Dither can be adjusted
         #print(f"GIF created successfully with {len(frames)} frames at {output_path}")
     else:
