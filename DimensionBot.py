@@ -60,28 +60,35 @@ async def link(ctx, string=''):
             await ctx.send(embed=discord.Embed(description=f'{ctx.author.mention} Error linking. Please make sure the account exists.',
                                                colour=discord.Colour.red()))
 
-@bot.command()
-async def osu(ctx, username=''):
-    with open('osu_links.json', 'r') as file:
-        data = json.load(file)
+
+async def get_member(ctx, username, data_file='osu_links.json'):
+    async with aiofiles.open(data_file, 'r') as file:
+        content = await file.read()
+        data = json.loads(content)
+
     member = ''
 
     if username == '':
-            member = str(ctx.author.id)
-            if member in data:
-                member = data[member]
+        member = str(ctx.author.id)
+        if member in data:
+            member = data[member]
 
-    if '<' in username:
-            member = username.replace('<@', '').replace('>', '')
-            if member in data:
-                member = data[member]
+    elif '<' in username:
+        member = username.replace('<@', '').replace('>', '')
+        if member in data:
+            member = data[member]
 
-    if username != '' and '<' not in username:
-        member = linking(name=username).user.id
+    elif username != '' and '<' not in username:
+        member = await linking(username).user.id
 
+    return member
+
+@bot.command()
+async def osu(ctx, username=''):
+    member = await get_member(ctx=ctx, username=username)
     username = User(id=member).user.username
 
-    gen_text = await ctx.send(
+    message = await ctx.send(
         embed=discord.Embed(
             description=f'generating profile for {username}',
             colour=discord.Colour.red()
@@ -90,43 +97,28 @@ async def osu(ctx, username=''):
 
     embed = discord.Embed()
     ## https://osu-sig.vercel.app/card?user={username}&mode=std&lang=en&blur=5&round_avatar=true&animation=true&hue=218&w=1100&h=640
-    capture_svg_frames(f'https://osu-sig.vercel.app/card?user={username}&mode=std&lang=en&blur=1&round_avatar=true&animation=true&hue=218&w=1100&h=640', output_dir="downloaded_svgs/frames")
+    await capture_svg_frames(f'https://osu-sig.vercel.app/card?user={username}&mode=std&lang=en&blur=1&round_avatar=true&animation=true&hue=218&w=1100&h=640', output_dir="downloaded_svgs/frames")
 
     png_folder = "downloaded_svgs/frames/"
     output_gif = "downloaded_svgs/outputGif/output.gif"
     create_gif(png_folder, output_gif, fps=24, num_interpolated_frames=0)
 
-    file = discord.File("downloaded_svgs/outputGif/output.gif", filename="output.gif")
+    gif = discord.File("downloaded_svgs/outputGif/output.gif", filename="output.gif")
     embed.set_image(url="attachment://output.gif")
 
-    await gen_text.delete()
+    await message.edit(embed=None, attachments=[gif])
 
-    message = await ctx.send(file=file)
 
-    await asyncio.sleep(1.9)
-    file = discord.File("downloaded_svgs/frames/frame_30.png", filename="frame_30.png")
+    await asyncio.sleep(1.8)
+    image = discord.File("downloaded_svgs/frames/frame_30.png", filename="frame_30.png")
     embed.set_image(url="attachment://frame_30.png")
 
-    await message.edit(attachments=[file])
+    await message.edit(attachments=[image])
+
 
 @bot.command()
 async def rs(ctx, username=''):
-    with open('osu_links.json', 'r') as file:
-        data = json.load(file)
-    member = ''
-
-    if username == '':
-            member = str(ctx.author.id)
-            if member in data:
-                member = data[member]
-
-    if '<' in username:
-            member = username.replace('<@', '').replace('>', '')
-            if member in data:
-                member = data[member]
-
-    if username != '' and '<' not in username:
-        member = linking(username).user.id
+    member = await get_member(ctx=ctx, username=username)
 
     stats = ''
 

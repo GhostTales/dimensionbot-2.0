@@ -3,3 +3,4 @@ ossapi~=5.0.1
 Pillow~=9.5.0
 oppadc~=1.1
 requests~=2.32.0
+aiofiles~=24.1.0

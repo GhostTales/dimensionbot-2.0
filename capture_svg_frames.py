@@ -1,19 +1,25 @@
 import subprocess
 import os
+import asyncio
 
-def capture_svg_frames(url, output_dir="frames"):
+async def capture_svg_frames(url, output_dir="frames"):
     # Ensure the output directory exists
     os.makedirs(output_dir, exist_ok=True)
 
     # Call the JavaScript file
-    process = subprocess.run(["node", "captureFrames.js", url, output_dir],
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    process = await asyncio.create_subprocess_exec("node", "captureFrames.js", url, output_dir,
+        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+    )
+
+    # Wait for the process to complete and get the output
+    stdout, stderr = await process.communicate()
 
     # Check for errors
     if process.returncode != 0:
-        print("Error:", process.stderr)
+        print("Error:", stderr.decode())
     else:
-       # print("Frames captured and saved to:", output_dir)
+        # Optionally print or log the successful result
+        # print("Frames captured and saved to:", output_dir)
         return
 
 

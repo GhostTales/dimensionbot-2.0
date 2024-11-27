@@ -5,10 +5,15 @@ import requests
 import zipfile
 import glob
 from rosu_pp_py import Beatmap, Calculator
+import asyncio
+from ossapi import OssapiAsync
 
 client_id = 24667
 client_secret = "3u3hoHG5DZ54zWWj4XRuf6a1wzXuIap5uBSqXIPT"
 
+
+async def async_api_call(call):
+    return await call
 
 class osu_stats:
     def __init__(self, ctx, user, play_type, mode):
@@ -283,8 +288,10 @@ class osu_stats:
 
 class linking:
     def __init__(self, name):
-        self.api = Ossapi(client_id, client_secret)
-        self.user = self.api.user(name, key=UserLookupKey.USERNAME)
+        api = OssapiAsync(client_id, client_secret)
+        self.user = async_api_call(api.user(name, key=UserLookupKey.USERNAME))
+
+
 
 class User:
     def __init__(self, id):
