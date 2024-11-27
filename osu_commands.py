@@ -1,317 +1,153 @@
 import os
-from ossapi import UserLookupKey, Ossapi
-import oppadc
 import requests
 import zipfile
-import glob
-from rosu_pp_py import Beatmap, Calculator
-import asyncio
-from ossapi import OssapiAsync
 
-client_id = 24667
-client_secret = "3u3hoHG5DZ54zWWj4XRuf6a1wzXuIap5uBSqXIPT"
-api = OssapiAsync(client_id, client_secret)
+async def calculate_accuracy(max_stats, stats, full_combo=False, passed=False):
+    # Define base scores for each HitResult
+    base_scores = {
+        'great': 300,
+        'perfect': 300,  # Same as great
+        'ok': 100,
+        'meh': 50,
+        'miss': 0,
+        'large_bonus': 50,
+        'small_bonus': 10,
+        'slider_tail_hit': 150,
+        'slider_tail_miss': 0,
+        'large_tick_hit': 30,
+        'large_tick_miss': 0,
+        'small_tick_hit': 10,
+        'small_tick_miss': 0,
+        'good': 200,
+        'ignore_hit': 0,  # Doesn't contribute to accuracy
+        'ignore_miss': 0  # Doesn't contribute to accuracy
+    }
 
-async def async_api_call(call):
-    return await call
+    # Add missing keys from stats to max_stats
+    for key in stats:
+        if key not in max_stats:
+            max_stats[key] = stats[key]
 
-class osu_stats_async:
-    def __init__(self, ctx, user, play_type, mode):
+    # adjust to full combo
+    if full_combo:
+        base_scores['miss'] = base_scores['great']
+        base_scores['large_tick_miss'] = base_scores['large_tick_hit']
+        # base_scores['small_tick_miss'] = base_scores['small_tick_hit']
+        base_scores['slider_tail_miss'] = base_scores['slider_tail_hit']
+    # calculate if player quit out before finish map
+    if not passed:
+        stats['great'] = max_stats['great'] - ((stats['ok'] or 0) + (stats['meh'] or 0) + (stats['miss'] or 0))
+        stats['slider_tail_hit'] = max_stats['slider_tail_hit'] - (stats['slider_tail_miss'] or 0)
+        stats['large_tick_hit'] = max_stats['large_tick_hit']
+        stats['large_bonus'] = max_stats['large_bonus']
+        stats['small_bonus'] = max_stats['small_bonus']
 
-        async def play_stats(user, play_type, mode):
-            user_scores = await api.user_scores(user, play_type, include_fails=True, mode=mode, limit=1)
-            play = user_scores[0]
-            beatmap = await play.beatmap
-            beatmapset = await play.beatmapset
-            map_obj_count = await (beatmap.count_circles + beatmap.count_sliders + beatmap.count_spinners)
-            n50 = play.statistics.meh or 0
-            n100 = play.statistics.ok or 0
-            n300 = play.statistics.great or 0
-            nmiss = play.statistics.miss or 0
-            pp = play.pp
+    # Function to safely handle None values
+    def get_value_or_zero(stat, stats_dict):
+        return stats_dict.get(stat, 0) or 0  # Return 0 if value is None
 
-            return {play, beatmap, beatmapset, map_obj_count, n50, n100, n300, nmiss, pp}
+    # Calculate maximum possible base score
+    current_maximum_base_score = sum(
+        get_value_or_zero(key, max_stats) * base_scores.get(key, 0) for key in base_scores)
 
-        play_stats(user, play_type, mode)
+    # Calculate player's achieved base score
+    current_base_score = sum(get_value_or_zero(key, stats) * base_scores.get(key, 0) for key in base_scores)
 
-
-class osu_stats:
-    def __init__(self, ctx, user, play_type, mode):
-        self.api = Ossapi(client_id, client_secret)
-
-        # osu play data
-        self.play = self.api.user_scores(user, play_type, include_fails=True, mode=mode, limit=1)[0]
-        self.beatmap = self.play.beatmap
-        self.beatmapset = self.play.beatmapset
-        self.map_obj_count = self.beatmap.count_circles + self.beatmap.count_sliders + self.beatmap.count_spinners
-        self.n50 = self.play.statistics.meh or 0
-        self.n100 = self.play.statistics.ok or 0
-        self.n300 = self.play.statistics.great or 0
-        self.nmiss = self.play.statistics.miss or 0
-        self.pp = self.play.pp
-
-
-        if self.play.mods != []:
-            mods = ''
-            for i in range(len(self.play.mods)):
-                mods += self.play.mods[len(self.play.mods) - i - 1].acronym
-            self.play.mods = mods
-        else:
-            self.play.mods = "No Mod"
-
-
-        # ___________ calc fc_acc ___________ #
-        # stable
-        self.play.accuracy = self.play.accuracy * 100
-        self.max_n300 = self.map_obj_count - self.n100 - self.n50
-        top = 300 * self.max_n300 + 100 * self.n100 + 50 * self.n50
-        divider = 300 * (self.max_n300 + self.n100 + self.n50)
-        self.stable_fc_acc = 100 * (top / divider)
-
-        # lazer
-        def calculate_accuracy(max_stats, stats, full_combo=False, passed=False):
-            # Define base scores for each HitResult
-            base_scores = {
-                'great': 300,
-                'perfect': 300,  # Same as great
-                'ok': 100,
-                'meh': 50,
-                'miss': 0,
-                'large_bonus': 50,
-                'small_bonus': 10,
-                'slider_tail_hit': 150,
-                'slider_tail_miss': 0,
-                'large_tick_hit': 30,
-                'large_tick_miss': 0,
-                'small_tick_hit': 10,
-                'small_tick_miss': 0,
-                'good': 200,
-                'ignore_hit': 0,  # Doesn't contribute to accuracy
-                'ignore_miss': 0  # Doesn't contribute to accuracy
-            }
-
-            # adjust to full combo
-            if full_combo:
-                base_scores['miss'] = base_scores['great']
-                base_scores['large_tick_miss'] = base_scores['large_tick_hit']
-                # base_scores['small_tick_miss'] = base_scores['small_tick_hit']
-                base_scores['slider_tail_miss'] = base_scores['slider_tail_hit']
-            # calculate if player quit out before finish map
-            if not passed:
-                stats['great'] = max_stats['great'] - ((stats['ok'] or 0) + (stats['meh'] or 0) + (stats['miss'] or 0))
-                stats['slider_tail_hit'] = max_stats['slider_tail_hit'] - (stats['slider_tail_miss'] or 0)
-                stats['large_tick_hit'] = max_stats['large_tick_hit']
-                stats['large_bonus'] = max_stats['large_bonus']
-                stats['small_bonus'] = max_stats['small_bonus']
+    # Calculate accuracy
+    accuracy = (current_base_score / current_maximum_base_score) * 100 if current_maximum_base_score > 0 else 0
+    # print(current_base_score, current_maximum_base_score, accuracy)
+    return accuracy
 
 
-            # Function to safely handle None values
-            def get_value_or_zero(stat, stats_dict):
-                return stats_dict.get(stat, 0) or 0  # Return 0 if value is None
+def download_and_extract(url, file_to_extract):
+    # Step 1: Download the file
+    response = requests.get(url)
+    if response.status_code == 200:
+        temp_zip_path = 'temp.osz'
+        with open(temp_zip_path, 'wb') as f:
+            f.write(response.content)
+    else:
+        raise Exception(f"Failed to download file from {url}")
 
-            # Calculate maximum possible base score
-            current_maximum_base_score = sum(
-                get_value_or_zero(key, max_stats) * base_scores.get(key, 0) for key in base_scores)
+    # Step 2: Extract all .osu files
+    extracted_files = []
+    with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
+        for file_name in zip_ref.namelist():
+            if file_name.endswith('.osu'):
+                zip_ref.extract(file_name, "map_files/")
+                extracted_files.append(os.path.join("map_files/", file_name))
 
-            # Calculate player's achieved base score
-            current_base_score = sum(get_value_or_zero(key, stats) * base_scores.get(key, 0) for key in base_scores)
+    # Step 3: Cleanup the temporary file
+    os.remove(temp_zip_path)
 
-            # Calculate accuracy
-            accuracy = (current_base_score / current_maximum_base_score) * 100 if current_maximum_base_score > 0 else 0
-            #print(current_base_score, current_maximum_base_score, accuracy)
-            return accuracy
+    # Step 4: Return the file path
+    return file_to_extract
 
-        stats = {
-            'great': self.play.statistics.great,
-            'perfect': self.play.statistics.perfect,  # Same as great
-            'ok': self.play.statistics.ok,
-            'meh': self.play.statistics.meh,
-            'miss': self.play.statistics.miss,
-            'large_bonus': self.play.statistics.large_bonus,
-            'small_bonus': self.play.statistics.small_bonus,
-            'slider_tail_hit': self.play.statistics.slider_tail_hit,
-            'slider_tail_miss': self.play.maximum_statistics['slider_tail_hit'] - self.play.statistics.slider_tail_hit,
-            'large_tick_hit': self.play.statistics.large_tick_hit,
-            'large_tick_miss': self.play.statistics.large_tick_miss,
-            'small_tick_hit': self.play.statistics.small_tick_hit,
-            'small_tick_miss': self.play.statistics.small_tick_miss,
-            'good': self.play.statistics.good,
-            'ignore_hit': self.play.statistics.ignore_hit,  # Doesn't contribute to accuracy
-            'ignore_miss': self.play.statistics.ignore_miss  # Doesn't contribute to accuracy
-        }
+def mod_values(mods):
+    mod_int_value = 0
+    mod_values = {
+        'NF': pow(2, 0),
+        'EZ': pow(2, 1),
+        'TD': pow(2, 2),
+        'HD': pow(2, 3),
+        'HR': pow(2, 4),
+        'SD': pow(2, 5),
+        'DT': pow(2, 6),
+        'RX': pow(2, 7),
+        'HT': pow(2, 8),
+        'NC': pow(2, 9) + pow(2, 6),  # Only set along with DoubleTime. i.e: NC only gives 576
+        'FL': pow(2, 10),
+        'AT': pow(2, 11),
+        'SO': pow(2, 12),
+        'AP': pow(2, 13),
+        'PF': pow(2, 14) + pow(2, 5),  # Only set along with SuddenDeath. i.e: PF only gives 16416
+        'K4': pow(2, 15),
+        'K5': pow(2, 16),
+        'K6': pow(2, 17),
+        'K7': pow(2, 18),
+        'K8': pow(2, 19),
+        'FI': pow(2, 20),
+        'RD': pow(2, 21),
+        'CN': pow(2, 22),
+        'TP': pow(2, 23),
+        'K9': pow(2, 24),
+        'CO': pow(2, 25),
+        'K1': pow(2, 26),
+        'K3': pow(2, 27),
+        'K2': pow(2, 28),
+        'V2': pow(2, 29),
+        'MR': pow(2, 30),
+    }
 
-        self.calculated_acc = calculate_accuracy(
-            max_stats=self.play.maximum_statistics,
-            stats=stats,
-            full_combo=False,
-            passed=self.play.passed)
+    for mod in mod_values:
+        if mod in str(mods):
+            mod_int_value += mod_values[mod]
+    return mod_int_value
 
-        self.calculated_fc_acc = calculate_accuracy(
-            max_stats=self.play.maximum_statistics,
-            stats=stats,
-            full_combo=True,
-            passed=self.play.passed)
+def mod_math(mods, beatmap):
+    import math
 
-        # ___________ calc fc_acc ___________ #
+    if 'HR' in str(mods):
+        beatmap.ar = min(beatmap.ar * 1.4, 10)
+        beatmap.accuracy = min(beatmap.accuracy * 1.4, 10)
+        beatmap.drain = min(beatmap.drain * 1.4, 10)
+        beatmap.cs = min(beatmap.cs * 1.3, 10)
 
-        # ___________ calc pp ___________ #
+    if 'EZ' in str(mods):
+        beatmap.ar *= 0.5
+        beatmap.accuracy *= 0.5
+        beatmap.drain *= 0.5
+        beatmap.cs *= 0.5
 
-        os.makedirs('map_files', exist_ok=True)
-        # Remove only files ending in .osu instead of the entire folder
-        osu_files = glob.glob('map_files/*.osz')
-        for file in osu_files:
-            os.remove(file)
+    if 'DT' in str(mods):
+        beatmap.bpm *= 1.5
+        beatmap.ar = min(0.126e-1 * beatmap.ar ** 2 + 0.4833e0 * beatmap.ar + 5, 11.11)
+        beatmap.accuracy = min(0.6667 * beatmap.accuracy + 4.4427, 11.11)
 
-        mapset_download = 'map_files/' + f'{self.beatmapset.id} {self.beatmapset.artist} - {self.beatmapset.title}'.translate(
-            str.maketrans("", "", '*"/\\<>:|?'))
-        current_map = f'{self.beatmapset.artist} - {self.beatmapset.title} ({self.beatmapset.creator}) [{self.beatmap.version}].osu'.translate(
-            str.maketrans("", "", '*"/\\<>:|?'))
+    if 'HT' in str(mods):
+        beatmap.bpm = beatmap.bpm * 0.75
+        beatmap.ar = min(2.89 + 12.1708 * math.sin(0.1226 * beatmap.ar - 0.6973), 9)
+        beatmap.accuracy = min(1.3333 * beatmap.accuracy - 4.4427, 11.11)
 
-        def download_and_extract(url, file_to_extract):
-            # Step 1: Download the file
-            response = requests.get(url)
-            if response.status_code == 200:
-                temp_zip_path = 'temp.osz'
-                with open(temp_zip_path, 'wb') as f:
-                    f.write(response.content)
-            else:
-                raise Exception(f"Failed to download file from {url}")
+    return beatmap
 
-            # Step 2: Extract all .osu files
-            extracted_files = []
-            with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
-                for file_name in zip_ref.namelist():
-                    if file_name.endswith('.osu'):
-                        zip_ref.extract(file_name, "map_files/")
-                        extracted_files.append(os.path.join("map_files/", file_name))
-
-            # Step 3: Cleanup the temporary file
-            os.remove(temp_zip_path)
-
-            # Step 4: Return the file path
-            return file_to_extract
-
-        map_extract = ''
-        if os.path.exists(f"map_files/{current_map}"):
-            map_extract = current_map
-
-        download_sites = {
-            f'https://beatconnect.io/b/{self.beatmapset.id}',
-            f'https://dl.sayobot.cn/beatmaps/download/novideo/{self.beatmapset.id}',
-            f'https://api.nerinyan.moe/d/{self.beatmapset.id}?nv=1'
-        }
-
-        if not os.path.exists(f"map_files/{current_map}"):
-            print("Downloading map")
-            for site in download_sites:
-                try:
-                    map_extract = download_and_extract(site, current_map)
-                except Exception as e:
-                    print(f"An error occurred: {e}")
-                if os.path.exists(f"map_files/{current_map}"):
-                    break
-
-        self.MapInfo = oppadc.OsuMap(file_path=f'map_files/{map_extract}')
-        self.map_max_combo = self.MapInfo.maxCombo()
-
-        self.mod_int_value = 0
-
-        mod_values = {
-            'NF': pow(2, 0),
-            'EZ': pow(2, 1),
-            'TD': pow(2, 2),
-            'HD': pow(2, 3),
-            'HR': pow(2, 4),
-            'SD': pow(2, 5),
-            'DT': pow(2, 6),
-            'RX': pow(2, 7),
-            'HT': pow(2, 8),
-            'NC': pow(2, 9) + pow(2, 6),  # Only set along with DoubleTime. i.e: NC only gives 576
-            'FL': pow(2, 10),
-            'AT': pow(2, 11),
-            'SO': pow(2, 12),
-            'AP': pow(2, 13),
-            'PF': pow(2, 14) + pow(2, 5),  # Only set along with SuddenDeath. i.e: PF only gives 16416
-            'K4': pow(2, 15),
-            'K5': pow(2, 16),
-            'K6': pow(2, 17),
-            'K7': pow(2, 18),
-            'K8': pow(2, 19),
-            'FI': pow(2, 20),
-            'RD': pow(2, 21),
-            'CN': pow(2, 22),
-            'TP': pow(2, 23),
-            'K9': pow(2, 24),
-            'CO': pow(2, 25),
-            'K1': pow(2, 26),
-            'K3': pow(2, 27),
-            'K2': pow(2, 28),
-            'V2': pow(2, 29),
-            'MR': pow(2, 30),
-        }
-
-        for mod in mod_values:
-            if mod in str(self.play.mods):
-                self.mod_int_value += mod_values[mod]
-
-        map = Beatmap(path=f'map_files/{map_extract}')
-        if self.pp == None:
-            calc_pp = Calculator(mods=self.mod_int_value)
-
-            calc_pp.set_acc(self.play.accuracy)
-            calc_pp.set_n50(self.n50)
-            calc_pp.set_n100(self.n100)
-            calc_pp.set_n300(self.n300)
-            calc_pp.set_n_misses(self.nmiss)
-            calc_pp.set_combo(self.play.max_combo)
-
-            self.pp = calc_pp.performance(map).pp
-
-        calc_fc_pp = Calculator(mods=self.mod_int_value)
-
-        calc_fc_pp.set_acc(self.calculated_fc_acc)
-        calc_fc_pp.set_n50(self.n50)
-        calc_fc_pp.set_n100(self.n100)
-        calc_fc_pp.set_n300(self.max_n300)
-        calc_fc_pp.set_n_misses(0)
-        calc_fc_pp.set_combo(self.map_max_combo)
-
-        self.fc_pp = calc_fc_pp.performance(map).pp
-        # ___________ calc pp ___________ #
-
-        self.beatmap.difficulty_rating = self.api.beatmap_attributes(self.beatmap.id, mods=self.mod_int_value).attributes.star_rating
-        import math
-
-        if 'HR' in str(self.play.mods):
-            self.beatmap.ar = min(self.beatmap.ar * 1.4, 10)
-            self.beatmap.accuracy = min(self.beatmap.accuracy * 1.4, 10)
-            self.beatmap.drain = min(self.beatmap.drain * 1.4, 10)
-            self.beatmap.cs = min(self.beatmap.cs * 1.3, 10)
-
-        if 'EZ' in str(self.play.mods):
-            self.beatmap.ar *= 0.5
-            self.beatmap.accuracy *= 0.5
-            self.beatmap.drain *= 0.5
-            self.beatmap.cs *= 0.5
-
-        if 'DT' in str(self.play.mods):
-            print('DT')
-            self.beatmap.bpm *= 1.5
-            self.beatmap.ar = min(0.126e-1 * self.beatmap.ar ** 2 + 0.4833e0 * self.beatmap.ar + 5, 11.11)
-            self.beatmap.accuracy = min(0.6667 * self.beatmap.accuracy + 4.4427, 11.11)
-
-        if 'HT' in str(self.play.mods):
-            self.beatmap.bpm = self.beatmap.bpm * 0.75
-            self.beatmap.ar = min(2.89 + 12.1708 * math.sin(0.1226 * self.beatmap.ar - 0.6973), 9)
-            self.beatmap.accuracy = min(1.3333 * self.beatmap.accuracy - 4.4427, 11.11)
-
-
-class linking:
-    def __init__(self, name):
-        self.user = async_api_call(api.user(name, key=UserLookupKey.USERNAME))
-
-
-
-class User:
-    def __init__(self, user_id):
-        self.user = async_api_call(api.user(user_id, key=UserLookupKey.ID))

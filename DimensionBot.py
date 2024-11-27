@@ -1,8 +1,11 @@
 import contextlib
 import datetime
 import asyncio
+import glob
+from rosu_pp_py import Beatmap, Calculator
 import aiofiles
 import json
+import oppadc
 import os
 import random
 import shutil
@@ -12,9 +15,10 @@ from PIL import Image
 import discord
 from discord.ext import tasks, commands
 import re
+from ossapi import OssapiAsync, UserLookupKey
 
+from osu_commands import calculate_accuracy, mod_values, download_and_extract, mod_math
 from help_list import commands_info
-from osu_commands import osu_stats, linking, User
 from capture_svg_frames import capture_svg_frames
 from create_gif import create_gif
 
@@ -23,6 +27,13 @@ from create_gif import create_gif
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
 bot.remove_command('help')
+
+#osu api credentials
+with open("Credentials.json") as json_file:
+    json_data = json.load(json_file)
+    client_id = json_data["ossapi"][0]["Client_id"]
+    client_secret = json_data["ossapi"][0]["Client_secret"]
+    oss_api = OssapiAsync(client_id, client_secret)
 
 @bot.command()
 async def link(ctx, string=''):
@@ -33,8 +44,7 @@ async def link(ctx, string=''):
                                 colour=discord.Colour.red()))
     else:
         try:
-            links = linking(string)
-            user = links.user
+            user = await oss_api.user(string, key=UserLookupKey.USERNAME)
 
             async with aiofiles.open('osu_links.json', mode='r+') as file:
                 # Read the file content
@@ -79,7 +89,7 @@ async def get_member(ctx, username, data_file='osu_links.json'):
             member = data[member]
 
     elif username != '' and '<' not in username:
-        user = await linking(username).user
+        user = await oss_api.user(username, key=UserLookupKey.USERNAME)
         member = user.id
 
     return member
@@ -87,7 +97,7 @@ async def get_member(ctx, username, data_file='osu_links.json'):
 @bot.command()
 async def osu(ctx, username=''):
     member = await get_member(ctx=ctx, username=username)
-    user = await User(user_id=member).user
+    user = await oss_api.user(member, key=UserLookupKey.ID)
     username = user.username
 
     user_directory = f"downloaded_svgs/{user.id}"
@@ -130,56 +140,167 @@ async def osu(ctx, username=''):
 async def rs(ctx, username=''):
     member = await get_member(ctx=ctx, username=username)
 
-    stats = ''
-
-
     with open('osu_links.json', 'r') as file:
         data = json.load(file)
 
     try:
-        stats = osu_stats(ctx=ctx, user=member, play_type='recent', mode='osu')
-        print(stats.play)
+        user_scores = await oss_api.user_scores(user_id=member, type='recent', include_fails=True, mode='osu', limit=1)
+        play = user_scores[0]
+        print(play)
+
 
     except Exception as e:
         print(f"An error occurred: {e}")
-        stats.play = None
+        play = None
 
-    if stats.play is not None and stats.play != "":
+    if play is not None and play != "":
+
+        play.accuracy *= 100
+        beatmap = play.beatmap
+        beatmapset = await beatmap.beatmapset()
+        n50 = play.statistics.meh or 0
+        n100 = play.statistics.ok or 0
+        n300 = play.statistics.great or 0
+        nmiss = play.statistics.miss or 0
+
+        stats = {
+            'great': play.statistics.great,
+            'perfect': play.statistics.perfect,  # Same as great
+            'ok': play.statistics.ok,
+            'meh': play.statistics.meh,
+            'miss': play.statistics.miss,
+            'large_bonus': play.statistics.large_bonus,
+            'small_bonus': play.statistics.small_bonus,
+            'slider_tail_hit': play.statistics.slider_tail_hit,
+            'slider_tail_miss': play.maximum_statistics['slider_tail_hit'] - play.statistics.slider_tail_hit,
+            'large_tick_hit': play.statistics.large_tick_hit,
+            'large_tick_miss': play.statistics.large_tick_miss,
+            'small_tick_hit': play.statistics.small_tick_hit,
+            'small_tick_miss': play.statistics.small_tick_miss,
+            'good': play.statistics.good,
+            'ignore_hit': play.statistics.ignore_hit,  # Doesn't contribute to accuracy
+            'ignore_miss': play.statistics.ignore_miss  # Doesn't contribute to accuracy
+        }
+
+        calculated_acc = await calculate_accuracy(
+            max_stats=play.maximum_statistics,
+            stats=stats,
+            full_combo=False,
+            passed=play.passed
+        )
+
+        calculated_fc_acc = await calculate_accuracy(
+            max_stats=play.maximum_statistics,
+            stats=stats,
+            full_combo=True,
+            passed=play.passed
+        )
+
+        os.makedirs('map_files', exist_ok=True)
+        # Remove only files ending in .osz instead of the entire folder
+        osu_files = glob.glob('map_files/*.osz')
+        for file in osu_files:
+            os.remove(file)
+
+        current_map = f'{beatmapset.artist} - {beatmapset.title} ({beatmapset.creator}) [{beatmap.version}].osu'.translate(
+            str.maketrans("", "", '*"/\\<>:|?'))
+
+        async def async_exists(path):
+            return await asyncio.to_thread(os.path.exists, path)
+
+        download_sites = {
+            f'https://beatconnect.io/b/{beatmapset.id}',
+            f'https://dl.sayobot.cn/beatmaps/download/novideo/{beatmapset.id}',
+            f'https://api.nerinyan.moe/d/{beatmapset.id}?nv=1'
+        }
+
+        map_extract = ''
+
+        if await async_exists(f"map_files/{current_map}"):
+            map_extract = current_map
+
+        if not await async_exists(f"map_files/{current_map}"):
+            downloading = await ctx.send(embed=discord.Embed(description=f'Downloading map', colour=discord.Colour.red()))
+            for site in download_sites:
+                try:
+                    map_extract = await asyncio.to_thread(download_and_extract, site, current_map)
+                except Exception as e:
+                    print(f"An error occurred: {e}")
+                if await async_exists(f"map_files/{current_map}"):
+                    break
+            await downloading.delete()
 
 
-        if stats.calculated_fc_acc == stats.calculated_acc and (stats.play.statistics.large_tick_miss or 0) <= 0:
-            pp = f'**{"{:.2f}".format(stats.pp)}PP**'
-            acc = f'{"{:.2f}".format(stats.play.accuracy)}% '
+
+        if play.mods != []:
+            mods = ''
+            for i in range(len(play.mods)):
+                mods += play.mods[len(play.mods) - i - 1].acronym
+            play.mods = mods
         else:
-            pp = f'**{"{:.2f}".format(stats.pp)}PP** ({"{:.2f}".format(stats.fc_pp)}PP if fc)'
-            acc = f'{"{:.2f}".format(stats.play.accuracy)}% ({"{:.2f}".format(stats.calculated_fc_acc)}% if fc)\n'
+            play.mods = "No Mod"
 
-        hit = f'[{stats.n300}/{stats.n100}/{stats.n50}/{stats.nmiss}]'
-        map_stats = (f'**BPM:** {stats.beatmap.bpm} ▸ **AR:** {"{:.1f}".format(stats.beatmap.ar)} ▸ **OD:** {"{:.1f}".format(stats.beatmap.accuracy)}'
-                             f' ▸ **HP:** {"{:.1f}".format(stats.beatmap.drain)} ▸ **CS:** {"{:.1f}".format(stats.beatmap.cs)}')
+        beatmap = mod_math(play.mods, beatmap)
 
-        map_progress = 100 * (stats.n300 + stats.n100 + stats.n50 + stats.nmiss) / stats.map_obj_count
+        map = Beatmap(path=f'map_files/{map_extract}')
+        if play.pp == None:
+            calc_pp = Calculator(mods=mod_values(play.mods),
+                                 acc=play.accuracy,
+                                 n300=n300,
+                                 n100=n100,
+                                 n50=n50,
+                                 n_misses=nmiss,
+                                 combo=play.max_combo
+                                 )
+            play.pp = calc_pp.performance(map).pp
+
+        calc_fc_pp = Calculator(mods=mod_values(play.mods),
+                                acc=play.accuracy,
+                                n300=(play.maximum_statistics['great'] - n100 - n50),
+                                n100=n100,
+                                n50=n50,
+                                n_misses=0,
+                                combo=beatmap.max_combo
+                                )
+        fc_pp = calc_fc_pp.performance(map).pp
+
+
+        if calculated_fc_acc == calculated_acc and (play.statistics.large_tick_miss or 0) <= 0:
+            pp = f'**{"{:.2f}".format(play.pp)}PP**'
+            acc = f'{"{:.2f}".format(play.accuracy)}% '
+        else:
+            pp = f'**{"{:.2f}".format(play.pp)}PP** ({"{:.2f}".format(fc_pp)}PP if fc)'
+            acc = f'{"{:.2f}".format(play.accuracy)}% ({"{:.2f}".format(calculated_fc_acc)}% if fc)\n'
+
+        hit = f'[{n300}/{n100}/{n50}/{nmiss}]'
+        map_stats = (f'**BPM:** {beatmap.bpm} ▸ **AR:** {"{:.1f}".format(beatmap.ar)} ▸ **OD:** {"{:.1f}".format(beatmap.accuracy)}'
+                             f' ▸ **HP:** {"{:.1f}".format(beatmap.drain)} ▸ **CS:** {"{:.1f}".format(beatmap.cs)}')
+
+        beatmap_obj_count = beatmap.count_circles + beatmap.count_sliders + beatmap.count_spinners
+        map_progress = 100 * (n300 + n100 + n50 + nmiss) / beatmap_obj_count
         if float(map_progress) != 100.0:
                 progress = f'▸ ({"{:.1f}".format(map_progress)}%)'
         else: progress = ''
 
+        MapInfo = oppadc.OsuMap(file_path=f'map_files/{map_extract}')
+        map_max_combo = MapInfo.maxCombo()
 
         recent = discord.Embed(description=f'{progress} ▸ {acc}▸ {pp}\n'
-                            f'▸ {stats.play.total_score} ▸ x{stats.play.max_combo}/{stats.map_max_combo} ▸ {hit}\n'
+                            f'▸ {play.total_score} ▸ x{play.max_combo}/{map_max_combo} ▸ {hit}\n'
                             f'▸ {map_stats}', colour=discord.Colour.orange())
 
 
         # base image location to download from osu map
-        base_image_pos = "map_image_card/map_card.png"
+        base_image_pos = f"map_image_card/map_{beatmap.id}_card.png"
         # download map card
-        urllib.request.urlretrieve(stats.beatmapset.covers.card, base_image_pos)
+        urllib.request.urlretrieve(beatmapset.covers.card, base_image_pos)
 
         ranking_grade_set = "website"
 
         # open all images for editing
         base_image = Image.open(base_image_pos)
         middle_image = Image.open('map_image_card/rectangle.png')
-        top_image = Image.open(f'rank_grades/{ranking_grade_set}/{stats.play.rank}.png')
+        top_image = Image.open(f'rank_grades/{ranking_grade_set}/{play.rank}.png')
 
         # edit all the images together
         base_image.paste(middle_image.resize((100, 100)), (-30, -65), middle_image.resize((100, 100)))
@@ -189,22 +310,23 @@ async def rs(ctx, username=''):
         base_image.save(base_image_pos, quality=95)
 
         # make the saved image a discord.file attachment
-        map_card = discord.File(base_image_pos, filename='map_card.png')
+        map_card = discord.File(base_image_pos, filename=f'map_{beatmap.id}_card.png')
 
-        recent.set_image(url='attachment://map_card.png')
+        recent.set_image(url=f'attachment://map_{beatmap.id}_card.png')
 
-        recent.set_footer(icon_url=stats.play._user.avatar_url, text=f'{stats.play._user.username}  |  On osu! Bancho ')
-        recent.timestamp = stats.play.ended_at
+        recent.set_footer(icon_url=play._user.avatar_url, text=f'{play._user.username}  |  On osu! Bancho ')
+        recent.timestamp = play.ended_at
 
-        rank_status = discord.File(f'ranking_status/{stats.beatmap.status}.png', filename=f'{stats.beatmap.status}.png')
+        rank_status = discord.File(f'ranking_status/{beatmap.status}.png', filename=f'{beatmap.status}.png')
 
-        recent.set_author(name=f'{stats.beatmapset.title} [{stats.beatmap.version}] +{stats.play.mods} [{"{:.2f}".format(stats.beatmap.difficulty_rating)}★]',
-                                  url=f'https://osu.ppy.sh/beatmapsets/{stats.beatmapset.id}#osu/{stats.beatmap.id}',
-                                  icon_url=f'attachment://{stats.beatmap.status}.png')
+        recent.set_author(name=f'{beatmapset.title} [{beatmap.version}] +{play.mods} [{"{:.2f}".format(beatmap.difficulty_rating)}★]',
+                                  url=f'https://osu.ppy.sh/beatmapsets/{beatmapset.id}#osu/{beatmap.id}',
+                                  icon_url=f'attachment://{beatmap.status}.png')
 
         await ctx.send(files=[rank_status, map_card], embed=recent)
+        os.remove(base_image_pos)
 
-    elif stats.play is None:
+    elif play is None:
         if '<' not in username or username.replace('<', '').replace('@', '').replace('>', '') in data:
             await ctx.send(embed=discord.Embed(description=f'{username} has no recent play data available', colour=discord.Colour.red()))
 
