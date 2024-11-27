@@ -1,4 +1,4 @@
-discord~=2.1.0
+discord~=2.3.2
 ossapi~=5.0.1
 Pillow~=9.5.0
 oppadc~=1.1

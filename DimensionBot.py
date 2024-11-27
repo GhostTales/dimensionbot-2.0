@@ -1,6 +1,7 @@
 import contextlib
 import datetime
 import asyncio
+import aiofiles
 import json
 import os
 import random
@@ -26,23 +27,38 @@ bot.remove_command('help')
 @bot.command()
 async def link(ctx, string=''):
     # Write to JSON with guild id and string as value
-    try:
-        links = linking(string)
-        user = links.user
-        # Check if the user is already linked to an account
-        with open('osu_links.json', 'r') as file:
-            data = json.load(file)
-        data[ctx.author.id] = user.id if ctx.author.id in data else user.id
-        with open('osu_links.json', 'w') as file:
-            json.dump(data, file)
+    if string == '':
+        await ctx.send(
+            embed=discord.Embed(description=f'{ctx.author.mention} Error linking. Please make sure to insert a username.',
+                                colour=discord.Colour.red()))
+    else:
+        try:
+            links = linking(string)
+            user = links.user
 
-        embed = discord.Embed(description=f'succesfully linked {ctx.author.mention} to {string}',
-                            colour=discord.Colour.orange())
-        await ctx.send(embed=embed)
-    except Exception as e:
-        print(f"Error linking account: {e}")
-        await ctx.send(embed=discord.Embed(description=f'{ctx.author.mention} Error linking. Please make sure the account exists.',
-                                            colour=discord.Colour.red()))
+            async with aiofiles.open('osu_links.json', mode='r+') as file:
+                # Read the file content
+                content = await file.read()
+                data = json.loads(content)
+
+                # Update the data
+                data[str(ctx.author.id)] = user.id
+
+                # Move to the beginning of the file and write updated content
+                await file.seek(0)
+                await file.write(json.dumps(data, indent=4))
+                await file.truncate()  # Ensure the file is truncated if the new data is shorter
+
+
+            embed = discord.Embed(description=f'succesfully linked {ctx.author.mention} to {string}',
+                                  colour=discord.Colour.orange())
+            await ctx.send(embed=embed)
+
+
+        except Exception as e:
+            print(f"Error linking account: {e}")
+            await ctx.send(embed=discord.Embed(description=f'{ctx.author.mention} Error linking. Please make sure the account exists.',
+                                               colour=discord.Colour.red()))
 
 @bot.command()
 async def osu(ctx, username=''):
@@ -215,10 +231,13 @@ async def roll_error(ctx, error):
 async def top(ctx):
     # Load user call times from the JSON file
     with contextlib.suppress(FileNotFoundError):
-        with open('vc_time.json', 'r') as file:
-            user_call_times = json.load(file)
+        async with aiofiles.open('vc_time.json', 'r') as file:
+            content = await file.read()
+            user_call_times = json.loads(content)
+
     # Sort the users by time spent in a call and get the top 10
     top_users = sorted(user_call_times.items(), key=lambda x: x[1], reverse=True)[:5]
+
     title = "**Top 5 in vc:**\n"
     description = ""
     for i, (user_id, time_spent) in enumerate(top_users, start=1):
@@ -226,12 +245,13 @@ async def top(ctx):
         minutes, seconds = divmod(remainder, 60)
         # Use a non-pinging format for user mentions
         description += f"**{i}.**  <@!{user_id}> - {hours}h {minutes}m\n"
+
     age = int(time.time()) - 1679505465
     hours2, remainder2 = divmod(age, 3600)
     minutes2, seconds2 = divmod(remainder2, 60)
     description += f"**Age of leaderboard:** {hours2}h {minutes2}m"
-    embed = discord.Embed(title=title, description=description, colour=discord.Colour.orange())
-    await ctx.send(embed=embed)
+
+    await ctx.send(embed=discord.Embed(title=title, description=description, colour=discord.Colour.orange()))
 
 @bot.command()
 async def area(ctx, min, max, ratio):
@@ -435,19 +455,30 @@ async def update_vc_time():
 
 
     # Save vc_time to a file
-    with open("vc_time.json", "w") as file:
-        json.dump(vc_time, file)
+    async with aiofiles.open("vc_time.json", "w") as file:
+        await file.write(json.dumps(vc_time, indent=4))
 
-@update_vc_time.before_loop
-async def before_update_vc_time():
-    await bot.wait_until_ready()
 
 @tasks.loop(minutes=5)
 async def backups_date():
     now = datetime.datetime.now()
     backup_file = f"backups/vc_time_backups/vc_time_{now.strftime('%Y_%m_%d')}.json"
-    if not os.path.exists(backup_file) or json.load(open("vc_time.json", "r")) != json.load(open(backup_file, "r")):
-        shutil.copy("vc_time.json", backup_file)
+
+    # Use a thread pool for blocking operations like os.path.exists
+    loop = asyncio.get_event_loop()
+    backup_exists = await loop.run_in_executor(None, os.path.exists, backup_file)
+
+    if not backup_exists:
+        should_backup = True
+    else:
+        async with aiofiles.open("vc_time.json", "r") as vc_file, aiofiles.open(backup_file, "r") as backup_file_obj:
+            vc_data = json.loads(await vc_file.read())
+            backup_data = json.loads(await backup_file_obj.read())
+            should_backup = vc_data != backup_data
+
+    if should_backup:
+        # Use a thread pool for shutil.copy since it's a blocking operation
+        await loop.run_in_executor(None, shutil.copy, "vc_time.json", backup_file)
 
 
 with open("Credentials.json") as json_file:
