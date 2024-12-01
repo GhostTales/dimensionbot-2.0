@@ -608,7 +608,6 @@ async def backups_date():
 with open("Credentials.json") as json_file:
     json_data = json.load(json_file)
     token = json_data["Credentials"][0]["Token"]
-    #token = json_data["Credentials"][0]["Token_Dev"]
 
 
 bot.run(token)
