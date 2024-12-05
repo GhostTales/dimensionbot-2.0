@@ -202,8 +202,16 @@ async def rs(ctx, username=''):
         for file in osu_files:
             os.remove(file)
 
-        current_map = f'{beatmapset.artist} - {beatmapset.title} ({beatmapset.creator}) [{beatmap.version}].osu'.translate(
-            str.maketrans("", "", '*"/\\<>:|?'))
+        async def sanitize_filename(filename: str) -> str:
+            # Remove any character that is not a letter, number, or underscore
+            sanitized = re.sub(r"[^a-zA-Z0-9 ()\[\]\-.]", '', filename)
+            return sanitized
+
+
+
+        current_map = f'{beatmapset.artist} - {beatmapset.title} ({beatmapset.creator}) [{beatmap.version}].osu'
+        current_map = await sanitize_filename(current_map)
+
 
         async def async_exists(path):
             return await asyncio.to_thread(os.path.exists, path)

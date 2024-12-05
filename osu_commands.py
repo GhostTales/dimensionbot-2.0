@@ -1,6 +1,26 @@
 import os
 import requests
 import zipfile
+import re
+
+def sanitize_filename(filename: str) -> str:
+    # Remove any character that is not a letter, number, or underscore
+    sanitized = re.sub(r"[^a-zA-Z0-9 ()\[\]\-.]", '', filename)
+    return sanitized
+
+
+def rename_file(current_path: str, new_name: str):
+    # Get the directory of the current file
+    directory = os.path.dirname(current_path)
+
+    # Sanitize the new name and append the original file extension
+    sanitized_name = sanitize_filename(new_name)
+
+    # Construct the new file path
+    new_path = os.path.join(directory, sanitized_name)
+
+    # Rename the file
+    os.rename(current_path, new_path)
 
 async def calculate_accuracy(max_stats, stats, full_combo=False, passed=False):
     # Define base scores for each HitResult
@@ -63,7 +83,7 @@ def download_and_extract(url, file_to_extract):
     # Step 1: Download the file
     response = requests.get(url)
     if response.status_code == 200:
-        temp_zip_path = 'temp.osz'
+        temp_zip_path = 'map_files/temp.osz'
         with open(temp_zip_path, 'wb') as f:
             f.write(response.content)
     else:
@@ -74,8 +94,9 @@ def download_and_extract(url, file_to_extract):
     with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
         for file_name in zip_ref.namelist():
             if file_name.endswith('.osu'):
-                zip_ref.extract(file_name, "map_files/")
-                extracted_files.append(os.path.join("map_files/", file_name))
+                extracted_path = zip_ref.extract(file_name, "map_files/")
+                new_path = rename_file(extracted_path, file_name)
+                extracted_files.append(new_path)
 
     # Step 3: Cleanup the temporary file
     os.remove(temp_zip_path)
@@ -150,4 +171,3 @@ def mod_math(mods, beatmap):
         beatmap.accuracy = min(1.3333 * beatmap.accuracy - 4.4427, 11.11)
 
     return beatmap
-
