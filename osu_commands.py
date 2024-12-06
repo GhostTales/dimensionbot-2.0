@@ -48,6 +48,22 @@ async def calculate_accuracy(max_stats, stats, full_combo=False, passed=False):
         if key not in max_stats:
             max_stats[key] = stats[key]
 
+    # Add missing keys from base_scores to max_stats and stats with a value of 0
+    for key in base_scores:
+        if key not in max_stats:
+            max_stats[key] = 0
+        if key not in stats:
+            stats[key] = 0
+
+    # Replace None values with 0 in all three dictionaries
+    for key in base_scores:
+        if base_scores[key] is None:
+            base_scores[key] = 0
+        if max_stats[key] is None:
+            max_stats[key] = 0
+        if stats[key] is None:
+            stats[key] = 0
+
     # adjust to full combo
     if full_combo:
         base_scores['miss'] = base_scores['great']
@@ -57,7 +73,7 @@ async def calculate_accuracy(max_stats, stats, full_combo=False, passed=False):
     # calculate if player quit out before finish map
     if not passed:
         stats['great'] = max_stats['great'] - ((stats['ok'] or 0) + (stats['meh'] or 0) + (stats['miss'] or 0))
-        stats['slider_tail_hit'] = max_stats['slider_tail_hit'] - (stats['slider_tail_miss'] or 0)
+        stats['slider_tail_hit'] = max_stats['slider_tail_hit'] or 0 - (stats['slider_tail_miss'] or 0)
         stats['large_tick_hit'] = max_stats['large_tick_hit']
         stats['large_bonus'] = max_stats['large_bonus']
         stats['small_bonus'] = max_stats['small_bonus']
@@ -75,7 +91,7 @@ async def calculate_accuracy(max_stats, stats, full_combo=False, passed=False):
 
     # Calculate accuracy
     accuracy = (current_base_score / current_maximum_base_score) * 100 if current_maximum_base_score > 0 else 0
-    # print(current_base_score, current_maximum_base_score, accuracy)
+    #print(current_base_score, current_maximum_base_score, accuracy)
     return accuracy
 
 
@@ -145,8 +161,18 @@ def mod_values(mods):
             mod_int_value += mod_values[mod]
     return mod_int_value
 
-def mod_math(mods, beatmap):
+def mod_math(mods, beatmap, settings):
     import math
+
+    mods = re.sub(r"[^A-Z]", '', mods)
+
+    if 'DA' in str(mods):
+        beatmap.ar = settings.get("approach_rate", beatmap.ar)
+        beatmap.accuracy = settings.get("overall_difficulty", beatmap.accuracy)
+        beatmap.drain = settings.get("drain_rate", beatmap.drain)
+        beatmap.cs = settings.get("circle_size", beatmap.cs)
+
+
 
     if 'HR' in str(mods):
         beatmap.ar = min(beatmap.ar * 1.4, 10)
@@ -160,14 +186,48 @@ def mod_math(mods, beatmap):
         beatmap.drain *= 0.5
         beatmap.cs *= 0.5
 
+
+    def CalculateOD(OD, multiplier):
+        ms = (-6 * OD + 79.5) / multiplier
+        new_od = (79.5 - ms) / 6
+        new_od = round(new_od * 10) / 10
+        return new_od
+
     if 'DT' in str(mods):
-        beatmap.bpm *= 1.5
-        beatmap.ar = min(0.126e-1 * beatmap.ar ** 2 + 0.4833e0 * beatmap.ar + 5, 11.11)
-        beatmap.accuracy = min(0.6667 * beatmap.accuracy + 4.4427, 11.11)
+
+        speed = settings.get("speed_change", 1.5)
+
+        beatmap.bpm *= speed
+
+        if beatmap.ar >= 5:
+            timings = (1950 - (150 * beatmap.ar)) / speed
+        else:
+            timings = (1800 - (120 * beatmap.ar)) / speed
+
+        beatmap.ar = -((2 / 3) / 100) * timings + 13
+
+        beatmap.accuracy = CalculateOD(beatmap.accuracy, speed)
+
 
     if 'HT' in str(mods):
-        beatmap.bpm = beatmap.bpm * 0.75
+
+        speed = settings.get("speed_change", 0.75)
+
+        beatmap.bpm *= speed
+
         beatmap.ar = min(2.89 + 12.1708 * math.sin(0.1226 * beatmap.ar - 0.6973), 9)
-        beatmap.accuracy = min(1.3333 * beatmap.accuracy - 4.4427, 11.11)
+
+        if beatmap.ar >= 5:
+            timings = (1300 - (100 * beatmap.ar)) / speed
+        else:
+            timings = (1200 - (80 * beatmap.ar)) / speed
+
+        if timings > 1000:
+            beatmap.ar = -((5 / 6) / 100) * timings + 15
+        else:
+            beatmap.ar = -((2 / 3) / 100) * timings + 13
+
+        beatmap.accuracy = CalculateOD(beatmap.accuracy, speed)
+
 
     return beatmap

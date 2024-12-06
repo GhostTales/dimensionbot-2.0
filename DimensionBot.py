@@ -2,7 +2,7 @@ import contextlib
 import datetime
 import asyncio
 import glob
-from rosu_pp_py import Beatmap, Calculator
+import rosu_pp_py as rosu
 import aiofiles
 import json
 import oppadc
@@ -145,13 +145,27 @@ async def rs(ctx, username=''):
 
     try:
         user_scores = await oss_api.user_scores(user_id=member, type='recent', include_fails=True, mode='osu', limit=1)
-        play = user_scores[0]
+        if user_scores:
+            play = user_scores[0]
+        else:
+            play = None
+
         print(play)
 
 
     except Exception as e:
         print(f"An error occurred: {e}")
         play = None
+
+        if '<' not in username or str(ctx.author.id) in data:
+            await ctx.send(embed=discord.Embed(description=f'{username} has no recent play data available', colour=discord.Colour.red()))
+
+        elif '<' in username and str(ctx.author.id) not in data:
+            await ctx.send(embed=discord.Embed(description=f'{username} is not linked to an osu account', colour=discord.Colour.red()))
+
+        else:
+            await ctx.send(
+                embed=discord.Embed(description="error contact <@341531784418164738>", colour=discord.Colour.red()))
 
     if play is not None and play != "":
 
@@ -172,7 +186,6 @@ async def rs(ctx, username=''):
             'large_bonus': play.statistics.large_bonus,
             'small_bonus': play.statistics.small_bonus,
             'slider_tail_hit': play.statistics.slider_tail_hit,
-            'slider_tail_miss': play.maximum_statistics['slider_tail_hit'] - play.statistics.slider_tail_hit,
             'large_tick_hit': play.statistics.large_tick_hit,
             'large_tick_miss': play.statistics.large_tick_miss,
             'small_tick_hit': play.statistics.small_tick_hit,
@@ -181,6 +194,10 @@ async def rs(ctx, username=''):
             'ignore_hit': play.statistics.ignore_hit,  # Doesn't contribute to accuracy
             'ignore_miss': play.statistics.ignore_miss  # Doesn't contribute to accuracy
         }
+        try:
+            stats.update({'slider_tail_miss': play.maximum_statistics['slider_tail_hit'] - play.statistics.slider_tail_hit})
+        except:
+            print("stable_score")
 
         calculated_acc = await calculate_accuracy(
             max_stats=play.maximum_statistics,
@@ -239,38 +256,62 @@ async def rs(ctx, username=''):
             await downloading.delete()
 
 
+        settings = {}
+        mods_str = "No Mod"
 
         if play.mods != []:
-            mods = ''
+            mods_str = ""
             for i in range(len(play.mods)):
-                mods += play.mods[len(play.mods) - i - 1].acronym
-            play.mods = mods
-        else:
-            play.mods = "No Mod"
+                mods_str += play.mods[len(play.mods) - i - 1].acronym
+                if play.mods[0].settings is not None:
+                    settings.update(play.mods[len(play.mods) - i - 1].settings)
+            if settings.get("speed_change"):
+                mods_str += f" ({settings.get('speed_change')}x)"
 
-        beatmap = mod_math(play.mods, beatmap)
 
-        map = Beatmap(path=f'map_files/{map_extract}')
+        beatmap = mod_math(mods_str, beatmap, settings)
+
+        map = rosu.Beatmap(path=f'map_files/{map_extract}')
+
+        mods = [{"acronym": mod.acronym, "settings": mod.settings} if hasattr(mod, "settings") else {"acronym": mod.acronym} for mod in play.mods]
+
         if play.pp == None:
-            calc_pp = Calculator(mods=mod_values(play.mods),
-                                 acc=play.accuracy,
-                                 n300=n300,
-                                 n100=n100,
-                                 n50=n50,
-                                 n_misses=nmiss,
-                                 combo=play.max_combo
-                                 )
-            play.pp = calc_pp.performance(map).pp
+            calc = rosu.Performance(
+                mods=mods,
+                accuracy=play.accuracy,
+                n300=n300,
+                n100=n100,
+                n50=n50,
+                misses=nmiss,
+                combo=play.max_combo,
+                ar=beatmap.ar,
+                cs=beatmap.cs,
+                od=beatmap.accuracy,
+                hp=beatmap.drain,
+            )
 
-        calc_fc_pp = Calculator(mods=mod_values(play.mods),
-                                acc=play.accuracy,
-                                n300=(play.maximum_statistics['great'] - n100 - n50),
-                                n100=n100,
-                                n50=n50,
-                                n_misses=0,
-                                combo=beatmap.max_combo
-                                )
-        fc_pp = calc_fc_pp.performance(map).pp
+            calc = calc.calculate(map)
+            play.pp = calc.pp
+
+        calc_fc = rosu.Performance(
+            mods=mods,
+            accuracy=play.accuracy,
+            n300=(play.maximum_statistics['great'] - n100 - n50),
+            n100=n100,
+            n50=n50,
+            misses=0,
+            combo=beatmap.max_combo,
+            ar=beatmap.ar,
+            cs=beatmap.cs,
+            od=beatmap.accuracy,
+            hp=beatmap.drain
+            )
+
+        calc_fc = calc_fc.calculate(map)
+
+        fc_pp = calc_fc.pp
+        play.beatmap.difficulty_rating = calc_fc.difficulty.stars
+        beatmap.max_combo = calc_fc.difficulty.max_combo
 
 
         if calculated_fc_acc == calculated_acc and (play.statistics.large_tick_miss or 0) <= 0:
@@ -281,7 +322,7 @@ async def rs(ctx, username=''):
             acc = f'{"{:.2f}".format(play.accuracy)}% ({"{:.2f}".format(calculated_fc_acc)}% if fc)\n'
 
         hit = f'[{n300}/{n100}/{n50}/{nmiss}]'
-        map_stats = (f'**BPM:** {beatmap.bpm} ▸ **AR:** {"{:.1f}".format(beatmap.ar)} ▸ **OD:** {"{:.1f}".format(beatmap.accuracy)}'
+        map_stats = (f'**BPM:** {round(beatmap.bpm)} ▸ **AR:** {"{:.1f}".format(beatmap.ar)} ▸ **OD:** {"{:.1f}".format(beatmap.accuracy)}'
                              f' ▸ **HP:** {"{:.1f}".format(beatmap.drain)} ▸ **CS:** {"{:.1f}".format(beatmap.cs)}')
 
         beatmap_obj_count = beatmap.count_circles + beatmap.count_sliders + beatmap.count_spinners
@@ -290,11 +331,10 @@ async def rs(ctx, username=''):
                 progress = f'▸ ({"{:.1f}".format(map_progress)}%)'
         else: progress = ''
 
-        MapInfo = oppadc.OsuMap(file_path=f'map_files/{map_extract}')
-        map_max_combo = MapInfo.maxCombo()
+
 
         recent = discord.Embed(description=f'{progress} ▸ {acc}▸ {pp}\n'
-                            f'▸ {play.total_score} ▸ x{play.max_combo}/{map_max_combo} ▸ {hit}\n'
+                            f'▸ {play.total_score} ▸ x{play.max_combo}/{beatmap.max_combo} ▸ {hit}\n'
                             f'▸ {map_stats}', colour=discord.Colour.orange())
 
 
@@ -327,22 +367,13 @@ async def rs(ctx, username=''):
 
         rank_status = discord.File(f'ranking_status/{beatmap.status}.png', filename=f'{beatmap.status}.png')
 
-        recent.set_author(name=f'{beatmapset.title} [{beatmap.version}] +{play.mods} [{"{:.2f}".format(beatmap.difficulty_rating)}★]',
+        recent.set_author(name=f'{beatmapset.title} [{beatmap.version}] +{mods_str} [{"{:.2f}".format(beatmap.difficulty_rating)}★]',
                                   url=f'https://osu.ppy.sh/beatmapsets/{beatmapset.id}#osu/{beatmap.id}',
                                   icon_url=f'attachment://{beatmap.status}.png')
 
         await ctx.send(files=[rank_status, map_card], embed=recent)
         os.remove(base_image_pos)
 
-    elif play is None:
-        if '<' not in username or username.replace('<', '').replace('@', '').replace('>', '') in data:
-            await ctx.send(embed=discord.Embed(description=f'{username} has no recent play data available', colour=discord.Colour.red()))
-
-        elif '<' in username or str(ctx.author.id) not in data:
-            await ctx.send(embed=discord.Embed(description=f'{username} is not linked to an osu account', colour=discord.Colour.red()))
-
-    else:
-        await ctx.send(embed=discord.Embed(description="error contact <@341531784418164738>", colour=discord.Colour.red()))
 
 @bot.command()
 async def roll(ctx, number=100):
