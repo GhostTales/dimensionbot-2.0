@@ -279,6 +279,7 @@ async def rs(ctx, username=''):
                 cs=beatmap.cs,
                 od=beatmap.accuracy,
                 hp=beatmap.drain,
+                hitresult_priority=rosu.HitResultPriority.WorstCase
             )
 
             calc = calc.calculate(map)
@@ -295,7 +296,8 @@ async def rs(ctx, username=''):
             ar=beatmap.ar,
             cs=beatmap.cs,
             od=beatmap.accuracy,
-            hp=beatmap.drain
+            hp=beatmap.drain,
+            hitresult_priority=rosu.HitResultPriority.WorstCase
             )
 
         calc_fc = calc_fc.calculate(map)
