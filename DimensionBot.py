@@ -179,20 +179,12 @@ async def rs(ctx, username=''):
 
         stats = {
             'great': play.statistics.great,
-            'perfect': play.statistics.perfect,  # Same as great
             'ok': play.statistics.ok,
             'meh': play.statistics.meh,
             'miss': play.statistics.miss,
-            'large_bonus': play.statistics.large_bonus,
-            'small_bonus': play.statistics.small_bonus,
             'slider_tail_hit': play.statistics.slider_tail_hit,
             'large_tick_hit': play.statistics.large_tick_hit,
-            'large_tick_miss': play.statistics.large_tick_miss,
-            'small_tick_hit': play.statistics.small_tick_hit,
-            'small_tick_miss': play.statistics.small_tick_miss,
-            'good': play.statistics.good,
-            'ignore_hit': play.statistics.ignore_hit,  # Doesn't contribute to accuracy
-            'ignore_miss': play.statistics.ignore_miss  # Doesn't contribute to accuracy
+            'large_tick_miss': play.statistics.large_tick_miss
         }
         try:
             stats.update({'slider_tail_miss': play.maximum_statistics['slider_tail_hit'] - play.statistics.slider_tail_hit})
