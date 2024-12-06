@@ -75,9 +75,9 @@ async def calculate_accuracy(max_stats, stats, full_combo=False, passed=False):
 
     # Calculate accuracy
     accuracy = (current_base_score / current_maximum_base_score) * 100 if current_maximum_base_score > 0 else 0
-    print(max_stats)
-    print(stats)
-    print(current_base_score, current_maximum_base_score, accuracy)
+    #print(max_stats)
+    #print(stats)
+    #print(current_base_score, current_maximum_base_score, accuracy)
     return accuracy
 
 
