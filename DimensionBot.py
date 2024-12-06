@@ -5,7 +5,6 @@ import glob
 import rosu_pp_py as rosu
 import aiofiles
 import json
-import oppadc
 import os
 import random
 import shutil
@@ -17,7 +16,7 @@ from discord.ext import tasks, commands
 import re
 from ossapi import OssapiAsync, UserLookupKey
 
-from osu_commands import calculate_accuracy, mod_values, download_and_extract, mod_math
+from osu_commands import calculate_accuracy, download_and_extract, mod_math
 from help_list import commands_info
 from capture_svg_frames import capture_svg_frames
 from create_gif import create_gif
