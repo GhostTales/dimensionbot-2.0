@@ -4,4 +4,5 @@ Pillow~=9.5.0
 oppadc~=1.1
 requests~=2.32.0
 aiofiles~=24.1.0
+tqdm~=4.67.1
 rosu-pp-py@git+https://github.com/MaxOhn/rosu-pp-py@2.0.1
