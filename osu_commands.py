@@ -2,6 +2,9 @@ import os
 import requests
 import zipfile
 import re
+from tqdm import tqdm
+import discord
+import asyncio
 
 def sanitize_filename(filename: str) -> str:
     # Remove any character that is not a letter, number, or underscore
@@ -80,14 +83,35 @@ async def calculate_accuracy(max_stats, stats, full_combo=False, passed=False):
     #print(current_base_score, current_maximum_base_score, accuracy)
     return accuracy
 
+def download_and_extract(url, file_to_extract, ctx, loop):
+    # Step 1: Download the file with progress
+    response = requests.get(url, stream=True)
 
-def download_and_extract(url, file_to_extract):
-    # Step 1: Download the file
-    response = requests.get(url)
     if response.status_code == 200:
-        temp_zip_path = 'map_files/temp.osz'
+        temp_zip_path = f'map_files/{file_to_extract}.osz'
+        total_size = int(response.headers.get('Content-Length', 0))
+
         with open(temp_zip_path, 'wb') as f:
-            f.write(response.content)
+            # Create the progress bar
+            with tqdm(total=total_size, unit='B', unit_scale=True, desc=f"Downloading {file_to_extract}") as bar:
+                last_progress = 0  # Track the last reported progress
+
+                for chunk in response.iter_content(chunk_size=1024):
+                    if chunk:
+                        f.write(chunk)
+                        bar.update(len(chunk))
+
+                        # Update the progress bar every 1% (or as desired)
+                        current_progress = int(bar.n / bar.total * 100)
+                        if current_progress - last_progress >= 10:  # Update every 1% progress
+                            # Create a progress bar with filled and unfilled blocks
+                            progress_bar = '█' * (current_progress // 10)  # 1 block per 5% progress
+                            progress_bar += '░' * (10 - (current_progress // 10))  # 20 blocks total
+                            embed_description = f"Downloading map...\n{progress_bar} {current_progress}%"
+                            embed = discord.Embed(description=embed_description, colour=discord.Colour.red())
+                            asyncio.run_coroutine_threadsafe(ctx.edit(embed=embed), loop)
+                            last_progress = current_progress
+
     else:
         raise Exception(f"Failed to download file from {url}")
 

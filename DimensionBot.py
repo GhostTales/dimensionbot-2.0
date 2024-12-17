@@ -236,10 +236,11 @@ async def rs(ctx, username=''):
             map_extract = current_map
 
         if not await async_exists(f"map_files/{current_map}"):
-            downloading = await ctx.send(embed=discord.Embed(description=f'Downloading map', colour=discord.Colour.red()))
+            downloading = await ctx.send(embed=discord.Embed(description=f'Downloading map...', colour=discord.Colour.red()))
+            loop = asyncio.get_event_loop()  # Get the current event loop
             for site in download_sites:
                 try:
-                    map_extract = await asyncio.to_thread(download_and_extract, site, current_map)
+                    map_extract = await asyncio.to_thread(download_and_extract, site, current_map, downloading, loop)
                 except Exception as e:
                     print(f"An error occurred: {e}")
                 if await async_exists(f"map_files/{current_map}"):
