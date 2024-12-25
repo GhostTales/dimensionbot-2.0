@@ -33,7 +33,6 @@ async def calculate_accuracy(max_stats, stats, full_combo=False, passed=False):
         'meh': 50, #50
         'miss': 0, #0
         'slider_tail_hit': 150, #150
-        'slider_tail_miss': 0, #0
         'large_tick_hit': 30, #30
         'large_tick_miss': 0, #0
     }
@@ -59,7 +58,6 @@ async def calculate_accuracy(max_stats, stats, full_combo=False, passed=False):
     if full_combo:
         base_scores['miss'] = base_scores['great']
         base_scores['large_tick_miss'] = base_scores['large_tick_hit']
-        base_scores['slider_tail_miss'] = base_scores['slider_tail_hit']
     # calculate if player quit out before finish map
     if not passed:
         stats['great'] = max_stats['great'] - ((stats['ok']) + (stats['meh']) + (stats['miss']))
