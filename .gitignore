@@ -1,12 +1,3 @@
-# ignores all fiels that are not the program
-map_files/
-map_image_card/map_card.png
-.lprof
-backups/
-downloaded_svgs/
-/__pycache__
-__pycache__/
-/frames
-Credentials.json
-osu_links.json
-vc_time.json
+/data/osu_maps
+/data/osu_data
+/data/assets/cards
