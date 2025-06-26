@@ -3,7 +3,7 @@ import json
 import discord
 from discord.ext import commands
 from discord.app_commands import AppCommandError
-from cogs.common.misc import insure_folders_exist, InvalidArgument, color_string
+from cogs.common.misc import insure_folders_exist, insure_files_exist, InvalidArgument, color_string
 import os
 
 intents = discord.Intents.all()
@@ -58,6 +58,7 @@ async def on_app_command_error(interaction: discord.Interaction, error: AppComma
 async def main():
     async with bot:
         await insure_folders_exist()
+        await insure_files_exist()
         await bot.start(token)
 
 if __name__ == "__main__":
