@@ -2,3 +2,4 @@
 /data/osu_data
 /data/assets/cards
 *.pyc
+Credentials.json
