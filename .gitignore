@@ -1,3 +1,4 @@
 /data/osu_maps
 /data/osu_data
 /data/assets/cards
+*.pyc

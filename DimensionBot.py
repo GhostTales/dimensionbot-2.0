@@ -3,8 +3,8 @@ import json
 import discord
 from discord.ext import commands
 from discord.app_commands import AppCommandError
-from command_loader import load_cogs
-from cogs.common.misc import insure_folders_exist, InvalidArgument
+from cogs.common.misc import insure_folders_exist, InvalidArgument, color_string
+import os
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
@@ -25,6 +25,18 @@ async def on_message(message):
 async def on_ready():
     print(f"Logged in as {bot.user} (ID: {bot.user.id})")
     await bot.change_presence(status=discord.Status.do_not_disturb, activity=discord.Game('osu! lazer'))
+
+
+async def load_cogs(bot):
+    for file in os.listdir("cogs"):
+            if file.endswith(".py") and file != "__init__.py":
+                module_name = file[:-3]  # Strip '.py'
+                full_module = f"cogs.{module_name}"
+                try:
+                    await bot.load_extension(full_module)  # Await here
+                    print(f"{color_string("Loaded extension:", "green")} {color_string(f"{full_module}", "yellow")}:")
+                except Exception as e:
+                    print(f"{color_string("Failed to load extension", "red")} {color_string(f"{full_module}", "yellow")}: {color_string(f"{e}", "red")}")
 
 @bot.event
 async def setup_hook():
