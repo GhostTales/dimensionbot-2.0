@@ -21,6 +21,7 @@ class Rs(commands.Cog):
         path = "data/osu_data/profiles.json"
         osu_id = None
 
+
         if "<@" in username:
             discord_id = username.strip("<@!>")
 
@@ -32,6 +33,8 @@ class Rs(commands.Cog):
         elif not username:
             # Default to command user
             discord_id = str(interaction.user.id)
+            if not await search_entry(path=path, discord_id=discord_id):
+                raise InvalidArgument(f"User <@{discord_id}> has not been linked to an osu account")
             osu_id = (await get_entry(path=path, discord_id=discord_id))["link"]
 
         try:
