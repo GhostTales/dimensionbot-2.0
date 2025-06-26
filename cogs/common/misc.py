@@ -70,8 +70,9 @@ async def insure_folders_exist() -> None:
     await create_folder('data/assets')
 
 async def insure_files_exist() -> None:
-    await create_file('data/osu_data/profiles.txt', "{}")
-    await rename_file('data/osu_data/profiles.txt', "profiles.json")
+    if not os.path.exists("data/osu_data/profiles.json"):
+        await create_file('data/osu_data/profiles.txt', "{}")
+        await rename_file('data/osu_data/profiles.txt', "profiles.json")
 
 
 async def delete_file(filename: str):
