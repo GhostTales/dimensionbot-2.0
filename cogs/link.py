@@ -11,18 +11,18 @@ class OsuAccountLink(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="link", description="Links your osu account to your discord")
-    async def link(self, interaction: discord.Interaction, string: str = ""):
+    async def link(self, interaction: discord.Interaction, username: str = ""):
         client_id, client_secret = await ossapi_credentials()
         oss_api = OssapiAsync(client_id, client_secret)
 
         # Write to JSON with guild id and string as value
-        if string == '':
+        if username == '':
             raise InvalidArgument(f'{interaction.user.mention} Error linking. Please make sure to insert a osu username.')
 
         else:
 
             try:
-                user = await oss_api.user(string, key=UserLookupKey.USERNAME)
+                user = await oss_api.user(username, key=UserLookupKey.USERNAME)
                 path = "data/osu_data/profiles.json"
 
                 await create_file(path)
@@ -38,7 +38,7 @@ class OsuAccountLink(commands.Cog):
 
 
                 embed = discord.Embed(
-                    description=f'succesfully linked {interaction.user.mention} to {string}',
+                    description=f'succesfully linked {interaction.user.mention} to {username}',
                     colour=discord.Colour.orange()
                 )
 
