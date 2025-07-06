@@ -4,3 +4,4 @@ aiofiles~=24.1.0
 rosu-pp-py
 playwright
 tqdm
+jinja2
