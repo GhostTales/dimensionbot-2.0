@@ -19,14 +19,12 @@ class Rs_fancy(commands.Cog):
 
     @app_commands.command(name="rs-fancy", description="Shows recent osu score")
     async def rs_fancy(self, interaction: discord.Interaction, username: str = ""):
+        await interaction.response.defer()
         client_id, client_secret = await ossapi_credentials()
         oss_api = OssapiAsync(client_id, client_secret)
 
         path = "data/osu_data/profiles.json"
         osu_id = None
-
-        await interaction.response.defer()
-        message = await interaction.original_response()
 
 
         if "<@" in username:
@@ -108,6 +106,7 @@ class Rs_fancy(commands.Cog):
             f'https://api.nerinyan.moe/d/{beatmapset.id}?nv=1'
         }
 
+        message = await interaction.original_response()
 
         for site in download_sites:
             if not await aiofiles.ospath.exists(f"data/osu_maps/{current_map}.osu"):
