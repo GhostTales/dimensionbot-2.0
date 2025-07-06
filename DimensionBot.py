@@ -12,7 +12,7 @@ bot.remove_command('help')
 
 with open("Credentials.json") as json_file:
     json_data = json.load(json_file)
-    token = json_data["Credentials"][0]["Token"]
+    token = json_data["Credentials"][0]["Token_Dev"]
 
 @bot.event
 async def on_message(message):
@@ -45,15 +45,24 @@ async def setup_hook():
 
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: AppCommandError):
-    # Custom error handling see cogs/common/misc
+    # Build the embed early
     if isinstance(error, InvalidArgument):
         embed = discord.Embed(description=error.message, colour=discord.Colour.red())
-        await interaction.response.send_message(embed=embed, ephemeral=True)
     else:
-        # Fallback for unknown errors
         embed = discord.Embed(description="An unexpected error occurred.", colour=discord.Colour.red())
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-        raise error
+
+    try:
+        if interaction.response.is_done():
+            # If already responded (e.g. deferred), use followup
+            await interaction.followup.send(embed=embed, ephemeral=True)
+        else:
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+    except Exception as e:
+        # Fallback log or report
+        print(f"Failed to send error message: {e}")
+
+    if not isinstance(error, InvalidArgument):
+        raise error  # Let other handlers (or logs) deal with it
 
 async def main():
     async with bot:
