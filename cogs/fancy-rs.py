@@ -181,14 +181,24 @@ class Rs_fancy(commands.Cog):
 
         #print(beatmap.status.value)
 
-        nonFC = ""
-        if not calculated_fc_acc == calculated_acc and not (play.statistics.large_tick_miss or 0) <= 0:
+        #nonFC = ""
+        #if not calculated_fc_acc == calculated_acc and not (play.statistics.large_tick_miss or 0) <= 0:
+            #nonFC = (f'<div class="stat">'
+            #          f'<span class="value">{"{:.2f}".format(fc_pp)}</span>'
+            #          f'<span class="label">PP for</span>'
+            #          f'<span class="value">{"{:.2f}".format(calculated_fc_acc)}%</span>'
+            #          f'<span class="label">fc</span>'
+            #          f'</div>')
+
+        if calculated_fc_acc == calculated_acc and (play.statistics.large_tick_miss or 0) <= 0:
+            nonFC = ""
+        else:
             nonFC = (f'<div class="stat">'
-                      f'<span class="value">{"{:.2f}".format(fc_pp)}</span>'
-                      f'<span class="label">PP for</span>'
-                      f'<span class="value">{"{:.2f}".format(calculated_fc_acc)}%</span>'
-                      f'<span class="label">fc</span>'
-                      f'</div>')
+                     f'<span class="value">{"{:.2f}".format(fc_pp)}</span>'
+                     f'<span class="label">PP for</span>'
+                     f'<span class="value">{"{:.2f}".format(calculated_fc_acc)}%</span>'
+                     f'<span class="label">fc</span>'
+                     f'</div>')
 
 
         beatmap_obj_count = beatmap.count_circles + beatmap.count_sliders + beatmap.count_spinners
