@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from .common.osu_data import get_entry, search_entry
-from .common.misc import ossapi_credentials, InvalidArgument, color_string
+from .common.misc import ossapi_credentials, InvalidArgument, color_string, delete_file
 from .common.osu_scores import calculate_accuracy, sanitize_filename, download_and_extract, mod_math
 from ossapi import OssapiAsync, UserLookupKey
 import rosu_pp_py as rosu
@@ -286,11 +286,16 @@ class Rs_fancy(commands.Cog):
             await html_to_png(html_file, output_png)
             html_file.unlink()  # Clean up
 
-        await generate_card(data, "data/assets/genericCardTemplate.html", Path("data/osu_data/output.png"))
+        png_name = f"{beatmapset.id}-{beatmap.id}-{play.id}"
 
-        card = discord.File(f'data/osu_data/output.png', filename=f'output.png')
+        await generate_card(data, "data/assets/genericCardTemplate.html", Path(f"data/osu_data/{png_name}.png"))
+
+        card = discord.File(f'data/osu_data/{png_name}.png', filename=f'{png_name}.png')
 
         await message.edit(attachments=[card], embed=None)
+
+        card.close()
+        await delete_file(f"data/osu_data/{png_name}.png'")
 
 async def setup(bot):
     await bot.add_cog(Rs_fancy(bot))

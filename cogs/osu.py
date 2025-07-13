@@ -30,6 +30,7 @@ class Osu(commands.Cog):
     async def osu(self, interaction: discord.Interaction, mode: app_commands.Choice[str] = "std", username: str = ""):
         ##pip install playwright
         ##playwright install
+        await interaction.response.defer()
         client_id, client_secret = await ossapi_credentials()
         oss_api = OssapiAsync(client_id, client_secret)
 
@@ -74,7 +75,7 @@ class Osu(commands.Cog):
             except:
                 raise InvalidArgument(f"""It seems the osu account "{username}" does not exist""")
 
-
+        message = await interaction.original_response()
 
         if mode != "std":
             mode = mode.value
@@ -85,7 +86,7 @@ class Osu(commands.Cog):
         await render_card(username=osu_name, mode=mode, output_path=f"data/assets/cards/card-{file_id}.png")
         file = discord.File(f"data/assets/cards/card-{file_id}.png", filename=f"card-{file_id}.png")
 
-        await interaction.response.send_message(file=file)
+        await message.edit(attachments=[file])
         file.close()
         await delete_file(f"data/assets/cards/card-{file_id}.png")
 
