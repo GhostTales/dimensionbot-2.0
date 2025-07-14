@@ -5,3 +5,4 @@ rosu-pp-py
 playwright
 tqdm
 jinja2
+aiosqlite
