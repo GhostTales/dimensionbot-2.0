@@ -100,9 +100,7 @@ class Rs(commands.Cog):
         beatmap_rosu = rosu.Beatmap(path=f"data/osu_maps/{current_map}.osu")
 
         mods = [
-            {"acronym": mod.acronym, "settings": mod.settings} if hasattr(mod,
-                                                                          "settings") and mod.settings is not None else {
-                "acronym": mod.acronym}
+            {"acronym": mod.acronym, "settings": mod.settings} if hasattr(mod, "settings") and mod.settings is not None else {"acronym": mod.acronym}
             for mod in play.mods]
 
         if play.pp is None:
@@ -147,7 +145,7 @@ class Rs(commands.Cog):
         beatmap.max_combo = calc_fc.difficulty.max_combo
 
 
-        if calculated_fc_acc == calculated_acc and (play.statistics.large_tick_miss or 0) <= 0:
+        if calculated_fc_acc == calculated_acc and (play.statistics.large_tick_miss or 0) <= 0 and play.rank.value != "F":
             pp_acc = f'**{"{:.2f}".format(play.pp)}PP** | {"{:.2f}".format(play.accuracy)}%'
         else:
             pp_acc = f'**{"{:.2f}".format(play.pp)}PP** ({"{:.2f}".format(fc_pp)}PP for {"{:.2f}".format(calculated_fc_acc)}% fc) {"{:.2f}".format(play.accuracy)}%'
