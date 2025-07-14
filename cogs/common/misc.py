@@ -6,6 +6,7 @@ import json
 from typing import Dict
 from discord import app_commands
 import re
+import aiosqlite
 
 
 class InvalidArgument(app_commands.AppCommandError):
@@ -70,9 +71,14 @@ async def insure_folders_exist() -> None:
     await create_folder('data/assets')
 
 async def insure_files_exist() -> None:
-    if not os.path.exists("data/osu_data/profiles.json"):
-        await create_file('data/osu_data/profiles.txt', "{}")
-        await rename_file('data/osu_data/profiles.txt', "profiles.json")
+    async with aiosqlite.connect("data/osu_data/profiles.db") as db:
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS profiles (
+                discord_id TEXT PRIMARY KEY,
+                osu_id INTEGER NOT NULL
+            )
+        """)
+        await db.commit()
 
 
 async def delete_file(filename: str):

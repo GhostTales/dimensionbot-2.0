@@ -1,8 +1,8 @@
 from ossapi import OssapiAsync, UserLookupKey
 import discord
 from discord.ext import commands
-from .common.osu_data import add_entry, edit_entry, search_entry
-from .common.misc import ossapi_credentials, InvalidArgument, create_file
+from .common.osu_data import save_profile
+from .common.misc import ossapi_credentials, InvalidArgument
 from discord import app_commands
 
 
@@ -15,7 +15,6 @@ class OsuAccountLink(commands.Cog):
         client_id, client_secret = await ossapi_credentials()
         oss_api = OssapiAsync(client_id, client_secret)
 
-        # Write to JSON with guild id and string as value
         if username == '':
             raise InvalidArgument(f'{interaction.user.mention} Error linking. Please make sure to insert a osu username.')
 
@@ -23,18 +22,9 @@ class OsuAccountLink(commands.Cog):
 
             try:
                 user = await oss_api.user(username, key=UserLookupKey.USERNAME)
-                path = "data/osu_data/profiles.json"
-
-                await create_file(path)
-
                 discord_id = str(interaction.user.id)
 
-                if await search_entry(discord_id=discord_id, path=path):
-                    await edit_entry(path=path, discord_id=discord_id, link=user.id)
-
-                else:
-                    await add_entry(path=path, discord_id=discord_id)
-                    await edit_entry(path=path, discord_id=discord_id, link=user.id)
+                await save_profile(discord_id=discord_id, osu_id=user.id)
 
 
                 embed = discord.Embed(

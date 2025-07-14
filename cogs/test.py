@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from .common.osu_data import get_entry
+from .common.osu_data import get_osu_id
 
 
 class Test(commands.Cog):
@@ -13,7 +13,7 @@ class Test(commands.Cog):
 
 
         discord_id = str(interaction.user.id)
-        profile = await get_entry(path="data/osu_data/profiles.json", discord_id=discord_id)
+        profile = await get_osu_id(discord_id=discord_id)
         print(profile)
 
 

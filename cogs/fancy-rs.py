@@ -3,10 +3,10 @@ import aiofiles.ospath
 import discord
 from discord.ext import commands
 from discord import app_commands
-from .common.osu_data import get_entry, search_entry
-from .common.misc import ossapi_credentials, InvalidArgument, color_string, delete_file
+from .common.misc import ossapi_credentials, InvalidArgument, delete_file
 from .common.osu_scores import calculate_accuracy, sanitize_filename, download_and_extract, mod_math
-from ossapi import OssapiAsync, UserLookupKey
+from .common.osu_data import resolve_osu_user
+from ossapi import OssapiAsync
 import rosu_pp_py as rosu
 from jinja2 import Environment, FileSystemLoader
 from playwright.async_api import async_playwright
@@ -23,41 +23,16 @@ class Rs_fancy(commands.Cog):
         client_id, client_secret = await ossapi_credentials()
         oss_api = OssapiAsync(client_id, client_secret)
 
-        path = "data/osu_data/profiles.json"
-        osu_id = None
 
+        user = await resolve_osu_user(username=username, interaction=interaction, oss_api=oss_api)
 
-        if "<@" in username:
-            discord_id = username.strip("<@!>")
-
-            if not await search_entry(path=path, discord_id=discord_id):
-                raise InvalidArgument(f"User <@{discord_id}> has not been linked to an osu account")
-
-            osu_id = (await get_entry(path=path, discord_id=discord_id))["link"]
-
-        elif not username:
-            # Default to command user
-            discord_id = str(interaction.user.id)
-            if not await search_entry(path=path, discord_id=discord_id):
-                raise InvalidArgument(f"User <@{discord_id}> has not been linked to an osu account")
-            osu_id = (await get_entry(path=path, discord_id=discord_id))["link"]
-
-        try:
-
-            if osu_id:
-                osu_user = await oss_api.user(osu_id, key=UserLookupKey.ID)
-            else:
-                osu_user = await oss_api.user(username, key=UserLookupKey.USERNAME)
-        except:
-            raise InvalidArgument(f'It seems the osu account "{username}" does not exist')
-
-        user_score = await oss_api.user_scores(user_id=osu_id, type='recent', include_fails=True, mode='osu', limit=1)
+        user_score = await oss_api.user_scores(user_id=user.id, type='recent', include_fails=True, mode='osu', limit=1)
 
 
         try:
             play = user_score[0]
         except:
-            raise InvalidArgument(f"No recent plays for user {osu_user.username}")
+            raise InvalidArgument(f"No recent plays for user {user.username}")
 
         #print(play)
 
@@ -117,25 +92,21 @@ class Rs_fancy(commands.Cog):
             else:
                 break
 
-        settings = {}
         mods_str = ""
-
         if play.mods:
             mods_str = " +"
-            for i in range(len(play.mods)):
-                mods_str += play.mods[len(play.mods) - i - 1].acronym
-                if play.mods[0].settings is not None:
-                    settings.update(play.mods[len(play.mods) - i - 1].settings)
-            if settings.get("speed_change"):
-                mods_str += f" ({settings.get('speed_change')}x)"
-
-        beatmap = await mod_math(mods_str, beatmap, settings)
+            for mod in reversed(play.mods):
+                acronym = mod.acronym
+                if mod.settings and "speed_change" in mod.settings:
+                    acronym += f"({mod.settings['speed_change']}x)"
+                mods_str += acronym
 
         beatmap_rosu = rosu.Beatmap(path=f"data/osu_maps/{current_map}.osu")
 
         mods = [
-            {"acronym": mod.acronym, "settings": mod.settings} if hasattr(mod, "settings") else {"acronym": mod.acronym}
+            {"acronym": mod.acronym, "settings": mod.settings} if hasattr(mod, "settings") and mod.settings is not None else {"acronym": mod.acronym}
             for mod in play.mods]
+
 
         if play.pp is None:
             calc = rosu.Performance(
@@ -174,31 +145,20 @@ class Rs_fancy(commands.Cog):
 
         fc_pp = calc_fc.pp
         # star rating with mods
+
         play.beatmap.difficulty_rating = calc_fc.difficulty.stars
         # max combo is none if not here
         beatmap.max_combo = calc_fc.difficulty.max_combo
 
-        #print(beatmap.status.value)
-
-        #nonFC = ""
-        #if not calculated_fc_acc == calculated_acc and not (play.statistics.large_tick_miss or 0) <= 0:
-            #nonFC = (f'<div class="stat">'
-            #          f'<span class="value">{"{:.2f}".format(fc_pp)}</span>'
-            #          f'<span class="label">PP for</span>'
-            #          f'<span class="value">{"{:.2f}".format(calculated_fc_acc)}%</span>'
-            #          f'<span class="label">fc</span>'
-            #          f'</div>')
-
-        if calculated_fc_acc == calculated_acc and (play.statistics.large_tick_miss or 0) <= 0:
-            nonFC = ""
-        else:
+        if calculated_fc_acc != calculated_acc or (play.statistics.large_tick_miss or 0) > 0 or play.rank.value == "F":
             nonFC = (f'<div class="stat">'
                      f'<span class="value">{"{:.2f}".format(fc_pp)}</span>'
                      f'<span class="label">PP for</span>'
                      f'<span class="value">{"{:.2f}".format(calculated_fc_acc)}%</span>'
                      f'<span class="label">fc</span>'
                      f'</div>')
-
+        else:
+            nonFC = ""
 
         beatmap_obj_count = beatmap.count_circles + beatmap.count_sliders + beatmap.count_spinners
         map_progress = 100 * (n300 + n100 + n50 + nmiss) / beatmap_obj_count
@@ -295,7 +255,8 @@ class Rs_fancy(commands.Cog):
         await message.edit(attachments=[card], embed=None)
 
         card.close()
-        await delete_file(f"data/osu_data/{png_name}.png'")
+
+        await delete_file(f"data/osu_data/{png_name}.png")
 
 async def setup(bot):
     await bot.add_cog(Rs_fancy(bot))

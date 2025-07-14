@@ -1,59 +1,47 @@
-from .misc import load_json, save_json, InvalidArgument
+import aiosqlite
+import discord
+from ossapi import OssapiAsync, UserLookupKey
+from .misc import InvalidArgument
 from typing import Optional
 
+async def get_osu_id(discord_id: str) -> int | None:
+    async with aiosqlite.connect("data/osu_data/profiles.db") as db:
+        async with db.execute("SELECT osu_id FROM profiles WHERE discord_id = ?", (discord_id,)) as cursor:
+            row = await cursor.fetchone()
+            return row[0] if row else None
 
-async def search_entry(path: str, discord_id: str) -> bool:
-    """Returns True if an entry for the given Discord ID exists in the JSON file."""
-    data = await load_json(path)
-    return discord_id in data
-
-async def add_entry(path: str, discord_id: str) -> None:
-    """Adds a new empty entry for a Discord ID in the JSON file."""
-    data = await load_json(path)
-
-    if discord_id in data:
-        raise InvalidArgument(f"Entry for {discord_id} already exists.")
+async def save_profile(discord_id: str, osu_id: int) -> None:
+    async with aiosqlite.connect("data/osu_data/profiles.db") as db:
+        await db.execute(
+            "INSERT OR REPLACE INTO profiles (discord_id, osu_id) VALUES (?, ?)",
+            (discord_id, osu_id)
+        )
+        await db.commit()
 
 
-    data[discord_id] = {
-        "link": None,
-        "tablet": None,
-        "tablet_area": None,
-        "keyboard": None,
-        "mouse": None
-    }
+async def resolve_osu_user(username: Optional[str], interaction: discord.Interaction, oss_api: OssapiAsync):
+    discord_id = None
+    osu_id = None
 
-    await save_json(path, data)
-    print(f"Added new entry for {discord_id} in {path}")
+    # 1. Handle mention input
+    if username and "<@" in username:
+        discord_id = username.strip("<@!>")
 
-async def edit_entry(path: str,
-                     discord_id: str,
-                     link: Optional[int] = None,
-                     tablet: Optional[str] = None,
-                     tablet_area: Optional[str] = None,
-                     keyboard: Optional[str] = None,
-                     mouse: Optional[str] = None) -> None:
-    """Edits an existing entry in the JSON file for the given Discord ID."""
-    data = await load_json(path)
+    # 2. No username — default to command user
+    elif not username:
+        discord_id = str(interaction.user.id)
 
-    if discord_id not in data:
-        raise InvalidArgument(f"No entry found for {discord_id}")
+    # 3. If discord_id was extracted or inferred, try DB lookup
+    if discord_id:
+        osu_id = await get_osu_id(discord_id)
+        if not osu_id:
+            raise InvalidArgument(f"User <@{discord_id}> has not been linked to an osu account")
 
-    if link is not None:
-        data[discord_id]["link"] = link
-    if tablet is not None:
-        data[discord_id]["tablet"] = tablet
-    if tablet_area is not None and isinstance(tablet_area, list) and len(tablet_area) == 2:
-        data[discord_id]["tablet_area"] = tablet_area
-    if keyboard is not None:
-        data[discord_id]["keyboard"] = keyboard
-    if mouse is not None:
-        data[discord_id]["mouse"] = mouse
-
-    await save_json(path, data)
-    print(f"Updated entry for {discord_id} in {path}")
-
-async def get_entry(path: str, discord_id: str) -> Optional[dict]:
-    """Returns the entry data for a given Discord ID, or None if it doesn't exist."""
-    data = await load_json(path)
-    return data.get(discord_id)
+    # 4. Fetch osu! user via ID or username
+    try:
+        if osu_id:
+            return await oss_api.user(osu_id, key=UserLookupKey.ID)
+        else:
+            return await oss_api.user(username, key=UserLookupKey.USERNAME)
+    except Exception:
+        raise InvalidArgument(f'It seems the osu account "{username or discord_id}" does not exist')
