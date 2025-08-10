@@ -107,6 +107,15 @@ class Rs_fancy(commands.Cog):
             {"acronym": mod.acronym, "settings": mod.settings} if hasattr(mod, "settings") and mod.settings is not None else {"acronym": mod.acronym}
             for mod in play.mods]
 
+        for m in mods:
+            if m["acronym"] == "DA":
+                settings = m.get("settings", {})
+                beatmap.ar = settings.get("approach_rate", beatmap.ar)
+                beatmap.drain = settings.get("drain_rate", beatmap.drain)
+                beatmap.accuracy = settings.get("overall_difficulty", beatmap.accuracy)
+                beatmap.cs = settings.get("circle_size", beatmap.cs)
+                break
+
 
         if play.pp is None:
             calc = rosu.Performance(
@@ -149,6 +158,22 @@ class Rs_fancy(commands.Cog):
         play.beatmap.difficulty_rating = calc_fc.difficulty.stars
         # max combo is none if not here
         beatmap.max_combo = calc_fc.difficulty.max_combo
+
+        ar = calc_fc.difficulty.ar
+        hp = calc_fc.difficulty.hp
+        od = -(1 / 6) * calc_fc.difficulty.great_hit_window + (13 + 1 / 3)
+
+        mod_map = {"HR": 1.3, "EZ": 0.5}
+        multiplier = next((mod_map[m["acronym"]] for m in mods if m["acronym"] in mod_map), 1)
+        cs = beatmap.cs * multiplier
+
+        bpm_map = {"DT": 1.5, "HT": 0.75}
+        bpm_multiplier = 1
+        for m in mods:
+            if m["acronym"] in bpm_map:
+                bpm_multiplier = m.get("settings", {}).get("speed_change", bpm_map[m["acronym"]])
+                break
+        bpm = beatmap.bpm * bpm_multiplier
 
         if calculated_fc_acc != calculated_acc or (play.statistics.large_tick_miss or 0) > 0 or play.rank.value == "F":
             nonFC = (f'<div class="stat">'
@@ -195,11 +220,11 @@ class Rs_fancy(commands.Cog):
             "hit100": n100,
             "hit50": n50,
             "miss": nmiss,
-            "bpm": f'{round(beatmap.bpm)}',
-            "ar": f'{int(beatmap.ar) if beatmap.ar.is_integer() else round(beatmap.ar, 1)}',
-            "od": f'{int(beatmap.accuracy) if beatmap.accuracy.is_integer() else round(beatmap.accuracy, 1)}',
-            "hp": f'{int(beatmap.drain) if beatmap.drain.is_integer() else round(beatmap.drain, 1)}',
-            "cs": f'{int(beatmap.cs) if beatmap.cs.is_integer() else round(beatmap.cs, 1)}',
+            "bpm": f'{round(bpm)}',
+            "ar": f'{int(ar) if ar.is_integer() else round(ar, 1)}',
+            "od": f'{int(od) if od.is_integer() else round(od, 1)}',
+            "hp": f'{int(hp) if hp.is_integer() else round(hp, 1)}',
+            "cs": f'{int(cs) if cs.is_integer() else round(cs, 1)}',
             "pfp": play.user().avatar_url,
             "username": play.user().username,
             "server": "Bancho",

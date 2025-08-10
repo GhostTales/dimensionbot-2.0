@@ -103,6 +103,16 @@ class Rs(commands.Cog):
             {"acronym": mod.acronym, "settings": mod.settings} if hasattr(mod, "settings") and mod.settings is not None else {"acronym": mod.acronym}
             for mod in play.mods]
 
+        for m in mods:
+            if m["acronym"] == "DA":
+                settings = m.get("settings", {})
+                beatmap.ar = settings.get("approach_rate", beatmap.ar)
+                beatmap.drain = settings.get("drain_rate", beatmap.drain)
+                beatmap.accuracy = settings.get("overall_difficulty", beatmap.accuracy)
+                beatmap.cs = settings.get("circle_size", beatmap.cs)
+                break
+
+
         if play.pp is None:
             calc = rosu.Performance(
                 mods=mods,
@@ -144,19 +154,33 @@ class Rs(commands.Cog):
         # max combo is none if not here
         beatmap.max_combo = calc_fc.difficulty.max_combo
 
+        ar = calc_fc.difficulty.ar
+        hp = calc_fc.difficulty.hp
+        od = -(1 / 6) * calc_fc.difficulty.great_hit_window + (13 + 1 / 3)
+
+        mod_map = {"HR": 1.3, "EZ": 0.5}
+        multiplier = next((mod_map[m["acronym"]] for m in mods if m["acronym"] in mod_map), 1)
+        cs = beatmap.cs * multiplier
+
+        bpm_map = {"DT": 1.5, "HT": 0.75}
+        bpm_multiplier = 1
+        for m in mods:
+            if m["acronym"] in bpm_map:
+                bpm_multiplier = m.get("settings", {}).get("speed_change", bpm_map[m["acronym"]])
+                break
+        bpm = beatmap.bpm * bpm_multiplier
 
         if calculated_fc_acc == calculated_acc and (play.statistics.large_tick_miss or 0) <= 0 and play.rank.value != "F":
             pp_acc = f'**{"{:.2f}".format(play.pp)}PP** | {"{:.2f}".format(play.accuracy)}%'
         else:
             pp_acc = f'**{"{:.2f}".format(play.pp)}PP** ({"{:.2f}".format(fc_pp)}PP for {"{:.2f}".format(calculated_fc_acc)}% fc) {"{:.2f}".format(play.accuracy)}%'
 
-
         map_stats = (
-            f'<:bpm:1387150781093773312> `{round(beatmap.bpm)}` | '
-            f'`AR: {int(beatmap.ar) if beatmap.ar.is_integer() else round(beatmap.ar, 1)} '
-            f'OD: {int(beatmap.accuracy) if beatmap.accuracy.is_integer() else round(beatmap.accuracy, 1)} '
-            f'HP: {int(beatmap.drain) if beatmap.drain.is_integer() else round(beatmap.drain, 1)} '
-            f'CS: {int(beatmap.cs) if beatmap.cs.is_integer() else round(beatmap.cs, 1)}`')
+            f'<:bpm:1387150781093773312> `{round(bpm)}` | '
+            f'`AR: {int(ar) if ar.is_integer() else round(ar, 1)} '
+            f'OD: {int(od) if od.is_integer() else round(od, 1)} '
+            f'HP: {int(hp) if hp.is_integer() else round(hp, 1)} '
+            f'CS: {int(cs) if cs.is_integer() else round(cs, 1)}`')
 
         beatmap_obj_count = beatmap.count_circles + beatmap.count_sliders + beatmap.count_spinners
         map_progress = 100 * (n300 + n100 + n50 + nmiss) / beatmap_obj_count
