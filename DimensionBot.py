@@ -5,6 +5,7 @@ from discord.ext import commands
 from discord.app_commands import AppCommandError
 from cogs.common.misc import insure_folders_exist, insure_files_exist, InvalidArgument, color_string
 import os
+from cogs.common.osu_data import get_beatmap_link_from_message
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
@@ -12,14 +13,28 @@ bot.remove_command('help')
 
 with open("Credentials.json") as json_file:
     json_data = json.load(json_file)
-    token = json_data["Credentials"][0]["Token"]
+    token = json_data["Credentials"][0]["Token_Dev"]
 
 @bot.event
 async def on_message(message):
     if message.author.id == bot.user.id:
         return
     print(f'{message.author}: {message.content} | {message.channel}')
+
+    await get_beatmap_link_from_message(message)
+
     await bot.process_commands(message)
+
+@bot.event
+async def on_message_edit(before, after):
+    if before.author.id == bot.user.id:
+        return
+
+    print(f'{before.author}: {before.content} # edited to # {after.content} | {before.channel}')
+
+    await get_beatmap_link_from_message(after)
+
+    await bot.process_commands(after)
 
 @bot.event
 async def on_ready():
@@ -51,15 +66,13 @@ async def on_app_command_error(interaction: discord.Interaction, error: AppComma
     else:
         embed = discord.Embed(description="An unexpected error occurred.", colour=discord.Colour.red())
 
-    try:
-        if interaction.response.is_done():
-            # If already responded (e.g. deferred), use followup
-            await interaction.followup.send(embed=embed, ephemeral=True)
-        else:
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-    except Exception as e:
-        # Fallback log or report
-        print(f"Failed to send error message: {e}")
+    await interaction.delete_original_response()
+
+    if interaction.response.is_done():
+        # If already responded (e.g. deferred), use followup
+        await interaction.followup.send(embed=embed, ephemeral=True)
+    else:
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     if not isinstance(error, InvalidArgument):
         raise error  # Let other handlers (or logs) deal with it
@@ -72,5 +85,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-#https://discordpy.readthedocs.io/en/stable/interactions/api.html?highlight=send_message#discord.InteractionResponse.send_message

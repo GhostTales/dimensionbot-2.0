@@ -2,9 +2,9 @@ import aiofiles.ospath
 import discord
 from discord.ext import commands
 from discord import app_commands
-from .common.misc import ossapi_credentials, InvalidArgument
-from .common.osu_scores import calculate_accuracy, sanitize_filename, download_and_extract, mod_math
-from .common.osu_data import resolve_osu_user
+from .common.misc import ossapi_credentials, InvalidArgument, sanitize_filename
+from .common.osu_scores import calculate_accuracy, download_and_extract
+from .common.osu_data import resolve_osu_user, set_recent_map
 from ossapi import OssapiAsync
 import rosu_pp_py as rosu
 
@@ -15,6 +15,9 @@ class Rs(commands.Cog):
 
     @app_commands.command(name="rs", description="Shows recent osu score")
     async def rs(self, interaction: discord.Interaction, username: str = ""):
+        await interaction.response.defer()
+        message = await interaction.original_response()
+
         client_id, client_secret = await ossapi_credentials()
         oss_api = OssapiAsync(client_id, client_secret)
 
@@ -73,10 +76,6 @@ class Rs(commands.Cog):
             f'https://dl.sayobot.cn/beatmaps/download/novideo/{beatmapset.id}',
             f'https://api.nerinyan.moe/d/{beatmapset.id}?nv=1'
         }
-
-
-        await interaction.response.defer()
-        message = await interaction.original_response()
 
 
         for site in download_sites:
@@ -222,6 +221,7 @@ class Rs(commands.Cog):
             icon_url=f'attachment://{beatmap.status}.png')
 
         await message.edit(embed=embed, attachments=[rank_status])
+        await set_recent_map(discord_channel_id=str(interaction.channel.id), beatmap_link=f"https://osu.ppy.sh/b/{beatmapset.id}")
 
 async def setup(bot):
     await bot.add_cog(Rs(bot))

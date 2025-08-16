@@ -29,6 +29,9 @@ class Area(commands.Cog):
 
     @app_commands.command(name="area", description="Calculates areas for your tablet, based on min/max width and ratio")
     async def area(self, interaction: discord.Interaction, min: int, max: int, ratio: float):
+        await interaction.response.defer()
+        message = await interaction.original_response()
+
         description = ""
 
         if min > max:
@@ -66,7 +69,7 @@ class Area(commands.Cog):
             description=f"Lowest whole fraction for ratio {ratio} is {int(absolute_min[0])} x {int(absolute_min[1])}\n\n{description}",
             colour=discord.Colour.orange())
 
-        await interaction.response.send_message(embed=embed)
+        await message.edit(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(Area(bot))

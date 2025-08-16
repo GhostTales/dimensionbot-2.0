@@ -3,9 +3,9 @@ import aiofiles.ospath
 import discord
 from discord.ext import commands
 from discord import app_commands
-from .common.misc import ossapi_credentials, InvalidArgument, delete_file
-from .common.osu_scores import calculate_accuracy, sanitize_filename, download_and_extract, mod_math
-from .common.osu_data import resolve_osu_user
+from .common.misc import ossapi_credentials, InvalidArgument, delete_file, sanitize_filename
+from .common.osu_scores import calculate_accuracy, download_and_extract
+from .common.osu_data import resolve_osu_user, set_recent_map
 from ossapi import OssapiAsync
 import rosu_pp_py as rosu
 from jinja2 import Environment, FileSystemLoader
@@ -278,6 +278,8 @@ class Rs_fancy(commands.Cog):
         card = discord.File(f'data/osu_data/{png_name}.png', filename=f'{png_name}.png')
 
         await message.edit(attachments=[card], embed=None)
+        await set_recent_map(discord_channel_id=str(interaction.channel.id),
+                             beatmap_link=f"https://osu.ppy.sh/b/{beatmapset.id}")
 
         card.close()
 

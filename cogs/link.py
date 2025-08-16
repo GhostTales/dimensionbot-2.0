@@ -12,6 +12,8 @@ class OsuAccountLink(commands.Cog):
 
     @app_commands.command(name="link", description="Links your osu account to your discord")
     async def link(self, interaction: discord.Interaction, username: str = ""):
+        await interaction.response.defer()
+        message = await interaction.original_response()
         client_id, client_secret = await ossapi_credentials()
         oss_api = OssapiAsync(client_id, client_secret)
 
@@ -32,7 +34,7 @@ class OsuAccountLink(commands.Cog):
                     colour=discord.Colour.orange()
                 )
 
-                await interaction.response.send_message(embed=embed)
+                await message.edit(embed=embed)
 
 
             except:

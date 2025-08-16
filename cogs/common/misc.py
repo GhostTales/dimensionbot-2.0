@@ -28,7 +28,7 @@ async def create_file(filename: str, content: str = ""):
         print(f"File '{filename}' created.")
 
 async def load_json(path: str) -> Dict:
-    """Loads the JSON data from file, or returns an empty dict if the file doesn't exist."""
+    #Loads the JSON data from file, or returns an empty dict if the file doesn't exist.
     if not os.path.exists(path):
         return {}
     with open(path, "r", encoding="utf-8") as f:
@@ -36,7 +36,7 @@ async def load_json(path: str) -> Dict:
 
 
 async def save_json(path: str, data: Dict) -> None:
-    """Saves the JSON data to file."""
+    #Saves the JSON data to file.
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
@@ -76,6 +76,14 @@ async def insure_files_exist() -> None:
             CREATE TABLE IF NOT EXISTS profiles (
                 discord_id TEXT PRIMARY KEY,
                 osu_id INTEGER NOT NULL
+            )
+        """)
+        await db.commit()
+    async with aiosqlite.connect("data/osu_data/recent_map.db") as db:
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS recent_map (
+                discord_channel_id TEXT PRIMARY KEY,
+                beatmap_link TEXT NOT NULL
             )
         """)
         await db.commit()

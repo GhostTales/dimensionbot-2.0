@@ -13,7 +13,7 @@ class Admin(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def reload(self, ctx):
-        """Reload all cogs in the 'cogs' folder."""
+        #Reload all cogs in the 'cogs' folder.
         loads_str = "```ansi\n"
         cogs_dir = os.path.join(os.path.dirname(__file__), "..", "cogs")
         cogs_dir = os.path.abspath(cogs_dir)

@@ -1,12 +1,8 @@
-import os
-import requests
 import zipfile
 import re
-from tqdm import tqdm
 import aiohttp
-import asyncio
 import discord
-from .misc import InvalidArgument, sanitize_filename, rename_file, delete_file
+from .misc import InvalidArgument, rename_file, delete_file
 import math
 
 

@@ -10,6 +10,8 @@ class Roll(commands.Cog):
 
     @app_commands.command(name="roll", description="Rolls a number")
     async def roll(self, interaction: discord.Interaction, limit: int = 100):
+        await interaction.response.defer()
+        message = await interaction.original_response()
         if limit == 0:
             limit = 100
 
@@ -18,7 +20,7 @@ class Roll(commands.Cog):
             colour=discord.Colour.orange()
         )
 
-        await interaction.response.send_message(embed=embed)
+        await message.edit(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(Roll(bot))

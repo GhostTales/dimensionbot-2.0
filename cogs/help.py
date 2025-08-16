@@ -23,6 +23,9 @@ class Help(commands.Cog):
     )
     @app_commands.choices(command=HELP_CHOICES)
     async def help(self, interaction: discord.Interaction, command: app_commands.Choice[str] = None):
+        await interaction.response.defer()
+        message = await interaction.original_response()
+
         commands_info = {
             "/help": "Displays a message with information about the bot's commands and functionality.",
             "/roll": "Rolls a random number between 1 and the specified number (default is 100).\nExample: /roll 1000",
@@ -43,7 +46,7 @@ class Help(commands.Cog):
             for cmd_name, desc in commands_info.items():
                 embed.add_field(name=cmd_name, value=desc, inline=False)
 
-        await interaction.response.send_message(embed=embed)
+        await message.edit(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(Help(bot))
