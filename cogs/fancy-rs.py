@@ -20,6 +20,7 @@ class Rs_fancy(commands.Cog):
     @app_commands.command(name="rs-fancy", description="Shows recent osu score")
     async def rs_fancy(self, interaction: discord.Interaction, username: str = ""):
         await interaction.response.defer()
+        message = await interaction.original_response()
         client_id, client_secret = await ossapi_credentials()
         oss_api = OssapiAsync(client_id, client_secret)
 
@@ -72,29 +73,30 @@ class Rs_fancy(commands.Cog):
             passed=play.passed
         )
 
-        current_map = f'{beatmapset.artist} - {beatmapset.title} ({beatmapset.creator}) [{beatmap.version}]'
-        current_map = await sanitize_filename(current_map)
-
         download_sites = {
             f'https://beatconnect.io/b/{beatmapset.id}',
             f'https://dl.sayobot.cn/beatmaps/download/novideo/{beatmapset.id}',
             f'https://api.nerinyan.moe/d/{beatmapset.id}?nv=1'
         }
 
-        message = await interaction.original_response()
+        current_map = f'{beatmapset.artist} - {beatmapset.title} ({beatmapset.creator}) [{beatmap.version}]'
+        current_map = await sanitize_filename(current_map)
+        single_difficulty = f'{beatmapset.artist} - {beatmapset.title} ({beatmapset.creator})'
+        single_difficulty = await sanitize_filename(single_difficulty)
 
         for site in download_sites:
-            if not await aiofiles.ospath.exists(f"data/osu_maps/{current_map}.osu"):
-                try:
-                    await download_and_extract(url=site, file_to_extract=f"data/osu_maps/{current_map}", message=message)
-                except:
-                    pass
-            else:
+            if await aiofiles.ospath.exists(f"data/osu_maps/{current_map}.osu"):
                 break
+            if await aiofiles.ospath.exists(f"data/osu_maps/{single_difficulty}.osu"):
+                break
+
+            await download_and_extract(url=site, file_to_extract=f"data/osu_maps/{current_map}", message=message)
+
+        if not await aiofiles.ospath.exists(f"data/osu_maps/{current_map}.osu"):
+            current_map = single_difficulty
 
         mods_str = ""
         if play.mods:
-            mods_str = " +"
             for mod in reversed(play.mods):
                 acronym = mod.acronym
                 if mod.settings and "speed_change" in mod.settings:
@@ -191,6 +193,7 @@ class Rs_fancy(commands.Cog):
         progress = ''
         if float(map_progress) != 100.0:
             progress = f'({"{:.1f}".format(map_progress)}%)'
+            play.rank.value = "F"
 
 
         ranks = {
@@ -208,7 +211,7 @@ class Rs_fancy(commands.Cog):
             "rankGradeColor": ranks[beatmap.status.value +2][1],
             "rankGrade": ranks[beatmap.status.value +2][0],
             "rank": Path(f"data/assets/rank_grades/custom/Grade{play.rank.value}.png").resolve().as_uri(),
-            "title": f'{beatmapset.title} [{beatmap.version}]{mods_str} [{"{:.2f}".format(beatmap.difficulty_rating)}★]',
+            "title": f'{beatmapset.title} [{beatmap.version}] +{mods_str} [{"{:.2f}".format(beatmap.difficulty_rating)}★]',
             "PP": f'{"{:.2f}".format(play.pp)}',
             "nonFC": nonFC,
             "progress": progress,
@@ -228,7 +231,7 @@ class Rs_fancy(commands.Cog):
             "pfp": play.user().avatar_url,
             "username": play.user().username,
             "server": "Bancho",
-            "time": play.ended_at.strftime('%Y-%m-%d %H:%M:%S %Z')
+            "time": play.ended_at.strftime('%Y-%m-%d')
         }
 
         # Step 1: Render the HTML using Jinja2
@@ -279,7 +282,9 @@ class Rs_fancy(commands.Cog):
 
         await message.edit(attachments=[card], embed=None)
         await set_recent_map(discord_channel_id=str(interaction.channel.id),
-                             beatmap_link=f"https://osu.ppy.sh/b/{beatmapset.id}")
+                             beatmap_link=f"https://osu.ppy.sh/b/{beatmap.id}",
+                             mods=mods)
+
 
         card.close()
 

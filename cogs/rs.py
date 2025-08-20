@@ -68,28 +68,31 @@ class Rs(commands.Cog):
             passed=play.passed
         )
 
-        current_map = f'{beatmapset.artist} - {beatmapset.title} ({beatmapset.creator}) [{beatmap.version}]'
-        current_map = await sanitize_filename(current_map)
-
         download_sites = {
+            f"https://osu.direct/d/{beatmapset.id}",
             f'https://beatconnect.io/b/{beatmapset.id}',
             f'https://dl.sayobot.cn/beatmaps/download/novideo/{beatmapset.id}',
             f'https://api.nerinyan.moe/d/{beatmapset.id}?nv=1'
         }
 
+        current_map = f'{beatmapset.artist} - {beatmapset.title} ({beatmapset.creator}) [{beatmap.version}]'
+        current_map = await sanitize_filename(current_map)
+        single_difficulty = f'{beatmapset.artist} - {beatmapset.title} ({beatmapset.creator})'
+        single_difficulty = await sanitize_filename(single_difficulty)
 
         for site in download_sites:
-            if not await aiofiles.ospath.exists(f"data/osu_maps/{current_map}.osu"):
-                try:
-                    await download_and_extract(url=site, file_to_extract=f"data/osu_maps/{current_map}", message=message)
-                except:
-                    pass
-            else:
+            if await aiofiles.ospath.exists(f"data/osu_maps/{current_map}.osu"):
                 break
+            if await aiofiles.ospath.exists(f"data/osu_maps/{single_difficulty}.osu"):
+                break
+
+            await download_and_extract(url=site, file_to_extract=f"data/osu_maps/{current_map}", message=message)
+
+        if not await aiofiles.ospath.exists(f"data/osu_maps/{current_map}.osu"):
+            current_map = single_difficulty
 
         mods_str = ""
         if play.mods:
-            mods_str = " +"
             for mod in reversed(play.mods):
                 acronym = mod.acronym
                 if mod.settings and "speed_change" in mod.settings:
@@ -216,12 +219,14 @@ class Rs(commands.Cog):
         rank_status = discord.File(f'data/assets/ranking_status/{beatmap.status}.png', filename=f'{beatmap.status}.png')
 
         embed.set_author(
-            name=f'{beatmapset.title} [{beatmap.version}]{mods_str} [{"{:.2f}".format(beatmap.difficulty_rating)}★]',
+            name=f'{beatmapset.title} [{beatmap.version}] +{mods_str} [{"{:.2f}".format(beatmap.difficulty_rating)}★]',
             url=f'https://osu.ppy.sh/beatmapsets/{beatmapset.id}#osu/{beatmap.id}',
             icon_url=f'attachment://{beatmap.status}.png')
 
         await message.edit(embed=embed, attachments=[rank_status])
-        await set_recent_map(discord_channel_id=str(interaction.channel.id), beatmap_link=f"https://osu.ppy.sh/b/{beatmapset.id}")
+        await set_recent_map(discord_channel_id=str(interaction.channel.id),
+                             beatmap_link=f"https://osu.ppy.sh/b/{beatmap.id}",
+                             mods=mods)
 
 async def setup(bot):
     await bot.add_cog(Rs(bot))

@@ -67,8 +67,7 @@ async def download_and_extract(url, file_to_extract, message):
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             if response.status != 200:
-                await message.delete()
-                raise InvalidArgument("Failed to download the file.")
+                raise InvalidArgument("Failed to download the beatmap.")
 
 
             total_size = int(response.headers.get('Content-Length', 0))
@@ -83,7 +82,7 @@ async def download_and_extract(url, file_to_extract, message):
                     downloaded += len(chunk)
 
                     # Update progress every 10%
-                    current_progress = int((downloaded / total_size) * 100)
+                    current_progress = int((downloaded / total_size) * 100) if total_size else 0
                     if current_progress // 10 != last_progress:
                         last_progress = current_progress // 10
 

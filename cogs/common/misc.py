@@ -1,6 +1,7 @@
 import os
 import asyncio
 import aiofiles.os
+import discord
 from aiofiles import open as aio_open
 import json
 from typing import Dict
@@ -83,7 +84,8 @@ async def insure_files_exist() -> None:
         await db.execute("""
             CREATE TABLE IF NOT EXISTS recent_map (
                 discord_channel_id TEXT PRIMARY KEY,
-                beatmap_link TEXT NOT NULL
+                beatmap_link TEXT NOT NULL,
+                mods TEXT Not NULL
             )
         """)
         await db.commit()
@@ -116,3 +118,20 @@ async def rename_file(current_path: str, new_name: str):
 
     # Rename the file asynchronously using a thread
     await asyncio.to_thread(os.rename, current_path, new_path)
+
+
+async def discord_message_to_str(message: discord.message) -> str | None:
+    if message is None:
+        return
+
+    message_str = message.content
+
+    for embed in message.embeds:
+        for value in embed.to_dict().values():
+            message_str += str(value)
+
+    if message.attachments:
+        for attachment in message.attachments:
+            message_str += attachment.url
+
+    return message_str

@@ -13,7 +13,7 @@ bot.remove_command('help')
 
 with open("Credentials.json") as json_file:
     json_data = json.load(json_file)
-    token = json_data["Credentials"][0]["Token_Dev"]
+    token = json_data["Credentials"][0]["Token"]
 
 @bot.event
 async def on_message(message):
