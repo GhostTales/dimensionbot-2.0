@@ -194,8 +194,6 @@ class Map(commands.Cog):
     async def map(self, interaction: discord.Interaction, beatmap_id: int = None, mods: str = None):
         mods = await sanitize_mod_string(mods.upper())
 
-        print(mods)
-
         await map_logic(reply_to=None, interaction=interaction, user_beatmap_id=beatmap_id, user_mods=mods)
 
 async def setup(bot):
