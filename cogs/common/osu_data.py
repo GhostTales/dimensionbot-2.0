@@ -5,6 +5,7 @@ from ossapi import OssapiAsync, UserLookupKey
 from .misc import InvalidArgument, discord_message_to_str
 from typing import Optional, Any
 import re
+from .osu_mods import mods_list, incompatible_mods
 
 async def get_osu_id(discord_id: str) -> int | None:
     async with aiosqlite.connect("data/osu_data/profiles.db") as db:
@@ -71,23 +72,51 @@ async def get_beatmap_link_from_message(message: discord.message) -> False:
         short_url = f"https://osu.ppy.sh/b/{beatmap_id}"
         #print(message.channel.id, short_url)
 
-        mods = await extract_full_mods(message_str)
-        await set_recent_map(discord_channel_id=str(message.channel.id), beatmap_link=short_url, mods=mods)
+        #mods = await extract_full_mods(message_str)
+        await set_recent_map(discord_channel_id=str(message.channel.id), beatmap_link=short_url, mods=[])
         return True
 
+async def sanitize_mod_string(input_str: str) -> str:
+    s = input_str.upper()
+    i = 0
+    parsed = []
 
-import re
-from typing import Any
+    # greedy parse: try longest mods first
+    while i < len(s):
+        match = None
+        for length in range(4, 1, -1):  # 4,3,2
+            if i + length <= len(s):
+                candidate = s[i:i+length]
+                if candidate in mods_list:
+                    # check for optional speed setting in parentheses e.g. DT(1.2X)
+                    if candidate in {"DT","NC","HT","DC"} and i + length < len(s) and s[i+length] == "(":
+                        m = re.match(r"\((\d+(\.\d+)?)X\)", s[i+length:], re.IGNORECASE)
+                        if m:
+                            candidate += m.group(0)  # include the (1.2X)
+                            length += len(m.group(0))
+                    match = candidate
+                    i += length
+                    break
+        if match:
+            parsed.append(match)
+        else:
+            i += 1  # skip unknown char
+
+    # remove duplicates while preserving order
+    seen = set()
+    unique_mods = [m for m in parsed if not (m in seen or seen.add(m))]
+
+    # enforce incompatibilities using mod **without settings**
+    final_mods = []
+    for mod in unique_mods:
+        base_mod = re.match(r"^[A-Z0-9]+", mod).group(0)
+        if any(re.match(r"^[A-Z0-9]+", f).group(0) in incompatible_mods.get(base_mod, set()) for f in final_mods):
+            continue
+        final_mods.append(mod)
+
+    return "".join(final_mods)
 
 async def extract_full_mods(s: str) -> list[dict[str, Any]]:
-    mods_list = [
-        "EZ","NF","HT","DC","NR",
-        "HR","SD","PF","DT","NC","FI","HD","CO","FL","BL","ST","AC",
-        "AT","CN","RX","AP","SO",
-        "TP","DA","CL","RD","MR","AL","SW","SG","IN","CS","HO","1K","2K","3K","4K","5K","6K","7K","8K","9K","10K",
-        "TR","WG","SI","GR","DF","WU","WD","TC","BR","AD","FF","MU","NS","MG","RP","AS","FR","BU","SY","DP","BM",
-        "SV2","TD"
-    ]
 
     mods_sorted = sorted(mods_list, key=len, reverse=True)
     mods_pattern = "|".join(mods_sorted)

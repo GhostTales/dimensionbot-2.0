@@ -1,0 +1,85 @@
+mods_list = [
+        "EZ","NF","HT","DC","NR",
+        "HR","SD","PF","DT","NC","FI","HD","CO","FL","BL","ST","AC",
+        "AT","CN","RX","AP","SO",
+        "TP","DA","CL","RD","MR","AL","SW","SG","IN","CS","HO","1K","2K","3K","4K","5K","6K","7K","8K","9K","10K",
+        "TR","WG","SI","GR","DF","WU","WD","TC","BR","AD","FF","MU","NS","MG","RP","AS","FR","BU","SY","DP","BM",
+        "SV2","TD"
+    ]
+
+incompatible_mods = {
+    #### osu
+    "EZ": {"HR", "AC", "DA"},
+    "NF": {"SD", "PF", "AC", "CN"},
+    "HT": {"DT", "NC", "DC", "WU", "WD", "AS"},
+    "DC": {"DT", "NC", "HT", "WU", "WD", "AS"},
+
+    "HR": {"EZ", "MR", "DA"},
+    "SD": {"PF", "TP", "NF", "CN"},
+    "PF": {"SD", "AC", "NF", "CN"},
+    "DT": {"NC", "HT", "DC", "WU", "WD", "AS"},
+    "NC": {"DT", "HT", "DC", "WU", "WD", "AS"},
+    "HD": {"SI", "TC", "AD", "DP", "FI", "CO"},
+    "FL": {"BL", "BM", "FI", "CO"},
+    "BL": {"FL"},
+    "ST": {"TP", "CL"},
+    "AC": {"EZ", "NF", "PF", "CN"},
+
+    "AT": {"CN", "RX", "AP", "SO", "AL", "SG", "MG", "RP", "AS"},
+    "CN": {"AT", "RX", "AP", "SO", "AL", "SG", "MG", "RP", "AS", "SD", "PF", "AC", "NF"},
+    "RX": {"CN", "AT", "AP", "AL", "SG", "MG"},
+    "AP": {"CN", "RX", "AT", "SO", "MG", "RP"},
+    "SO": {"CN", "AP", "AT", "TP"},
+
+    "TP": {"SD", "ST", "SO", "RD", "TC", "AD", "DP"},
+    "CL": {"ST"},
+    "RD": {"TP", "SW"},
+    "MR": {"HR"},
+    "AL": {"CN", "RX", "AT", "SG"},
+    "SG": {"AL", "AT", "CN", "RX"},
+    "TR": {"WG", "MG", "RP", "FR", "DP"},
+    "WG": {"TR", "MG", "RP", "DP"},
+    "SI": {"HD", "GR", "DF", "TC", "AD", "DP"},
+    "GR": {"SI", "DF", "TC", "AD", "DP"},
+    "DF": {"SI", "GR", "TC", "AD", "DP"},
+    "WU": {"DC", "DT", "HT", "NC", "WD", "AS"},
+    "WD": {"DC", "DT", "HT", "NC", "WU", "AS"},
+    "TC": {"DF", "GR", "HD", "SI", "TP", "DP"},
+    "BR": {"BU"},
+    "AD": {"DF", "GR", "HD", "SI", "TP", "FR"},
+    "MU": {},
+    "NS": {"BM"},
+    "MG": {"AP", "AT", "CN", "RX", "TR", "WG", "RP", "BU", "DP"},
+    "RP": {"AP", "AT", "CN", "MG", "TR", "WG", "BU", "DP"},
+    "AS": {"AT", "CN", "DC", "DT", "HT", "NC", "WD", "WU"},
+    "FR": {"AD", "TR", "DP"},
+    "BU": {"BR", "MG", "RP"},
+    "SY": {},
+    "DP": {"DF", "FR", "GR", "HD", "MG", "RP", "SI", "TC", "TP", "TR", "WG"},
+    "BM": {"FL", "NS"},
+
+    #### mania
+    "NR": {"HO"},
+
+    "FI": {"HD", "CO", "FL"},
+    "CO": {"FI", "FL", "HD"},
+
+    "DS": {},
+    "IN": {"HO"},
+    "CS": {},
+    "HO": {"IN", "NR"},
+    "1K": {"2K","3K","4K","5K","6K","7K","8K","9K","10K"},
+    "2K": {"1K","3K","4K","5K","6K","7K","8K","9K","10K"},
+    "3K": {"1K","2K","4K","5K","6K","7K","8K","9K","10K"},
+    "4K": {"1K","2K","3K","5K","6K","7K","8K","9K","10K"},
+    "5K": {"1K","2K","3K","4K","6K","7K","8K","9K","10K"},
+    "6K": {"1K","2K","3K","4K","5K","7K","8K","9K","10K"},
+    "7K": {"1K","2K","3K","4K","5K","6K","8K","9K","10K"},
+    "8K": {"1K","2K","3K","4K","5K","6K","7K","9K","10K"},
+    "9K": {"1K","2K","3K","4K","5K","6K","7K","8K","10K"},
+    "10K":{"1K","2K","3K","4K","5K","6K","7K","8K","9K"},
+
+    #### taiko
+    "SR": {},
+    "SW": {"RD"},
+}

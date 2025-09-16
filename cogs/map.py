@@ -1,11 +1,10 @@
-import json
 import math
 import re
 import aiofiles.ospath
 import discord
 from discord.ext import commands
 from discord import app_commands
-from .common.osu_data import get_recent_map, set_recent_map, get_beatmap_link_from_message, extract_full_mods, discord_message_to_str
+from .common.osu_data import get_recent_map, set_recent_map, get_beatmap_link_from_message, extract_full_mods, discord_message_to_str, sanitize_mod_string
 from .common.misc import ossapi_credentials, InvalidArgument, sanitize_filename
 from .common.osu_scores import download_and_extract
 from ossapi import OssapiAsync
@@ -149,7 +148,7 @@ async def map_logic(reply_to: discord.Message | None, interaction: discord.Inter
 
     embed.set_author(name=f'{beatmapset.title} by {beatmapset.creator}', url=f"https://osu.ppy.sh/b/{beatmap_id}")
 
-    description = (f'> Difficulty: `{beatmap.difficulty_rating}★` | Max Combo: `{beatmap.max_combo}x`\n'
+    description = (f'> Difficulty: `{calc_fc.difficulty.stars:.1f}★` | Max Combo: `{beatmap.max_combo}x`\n'
                    f'> <:Length:1406065518946942986> `{beatmap_length}` | <:bpm:1387150781093773312> `{round(bpm)}` | Objects: `{beatmap_obj_count}`\n'
                    f'> {map_stats}\n'
                    f'{pp_per_acc}')
@@ -184,7 +183,7 @@ async def map_message(interaction: discord.Interaction, reply_to: discord.Messag
     await map_logic(reply_to=reply_to, interaction=interaction)
 
 # Create a context menu command
-map_context_menu = app_commands.ContextMenu(name="Show Map Data",callback=map_message)
+map_context_menu = app_commands.ContextMenu(name="Show Map Data", callback=map_message)
 
 
 class Map(commands.Cog):
@@ -193,6 +192,10 @@ class Map(commands.Cog):
 
     @app_commands.command(name="map", description="show map data")
     async def map(self, interaction: discord.Interaction, beatmap_id: int = None, mods: str = None):
+        mods = await sanitize_mod_string(mods.upper())
+
+        print(mods)
+
         await map_logic(reply_to=None, interaction=interaction, user_beatmap_id=beatmap_id, user_mods=mods)
 
 async def setup(bot):

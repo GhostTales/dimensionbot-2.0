@@ -93,6 +93,7 @@ class Rs(commands.Cog):
 
         mods_str = ""
         if play.mods:
+            mods_str += " +"
             for mod in reversed(play.mods):
                 acronym = mod.acronym
                 if mod.settings and "speed_change" in mod.settings:
@@ -219,7 +220,7 @@ class Rs(commands.Cog):
         rank_status = discord.File(f'data/assets/ranking_status/{beatmap.status}.png', filename=f'{beatmap.status}.png')
 
         embed.set_author(
-            name=f'{beatmapset.title} [{beatmap.version}] +{mods_str} [{"{:.2f}".format(beatmap.difficulty_rating)}★]',
+            name=f'{beatmapset.title} [{beatmap.version}]{mods_str} [{"{:.2f}".format(beatmap.difficulty_rating)}★]',
             url=f'https://osu.ppy.sh/beatmapsets/{beatmapset.id}#osu/{beatmap.id}',
             icon_url=f'attachment://{beatmap.status}.png')
 

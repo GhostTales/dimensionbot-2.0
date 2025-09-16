@@ -97,6 +97,7 @@ class Rs_fancy(commands.Cog):
 
         mods_str = ""
         if play.mods:
+            mods_str += " +"
             for mod in reversed(play.mods):
                 acronym = mod.acronym
                 if mod.settings and "speed_change" in mod.settings:
@@ -211,7 +212,7 @@ class Rs_fancy(commands.Cog):
             "rankGradeColor": ranks[beatmap.status.value +2][1],
             "rankGrade": ranks[beatmap.status.value +2][0],
             "rank": Path(f"data/assets/rank_grades/custom/Grade{play.rank.value}.png").resolve().as_uri(),
-            "title": f'{beatmapset.title} [{beatmap.version}] +{mods_str} [{"{:.2f}".format(beatmap.difficulty_rating)}★]',
+            "title": f'{beatmapset.title} [{beatmap.version}]{mods_str} [{"{:.2f}".format(beatmap.difficulty_rating)}★]',
             "PP": f'{"{:.2f}".format(play.pp)}',
             "nonFC": nonFC,
             "progress": progress,
