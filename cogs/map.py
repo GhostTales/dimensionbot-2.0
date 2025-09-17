@@ -192,7 +192,7 @@ class Map(commands.Cog):
 
     @app_commands.command(name="map", description="show map data")
     async def map(self, interaction: discord.Interaction, beatmap_id: int = None, mods: str = None):
-        mods = await sanitize_mod_string(mods)
+        mods = await sanitize_mod_string(mods or "")
 
         await map_logic(reply_to=None, interaction=interaction, user_beatmap_id=beatmap_id, user_mods=mods)
 
